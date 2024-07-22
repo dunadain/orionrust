@@ -7,7 +7,7 @@ use tokio::{io::AsyncReadExt, net::TcpListener, select};
 use tokio_util::sync::CancellationToken;
 use tracing::error;
 
-pub async fn serve(addr: &str, port: u32, event_listener: EventListener) {
+pub async fn serve_tcp(addr: &str, port: u32, event_listener: EventListener) {
     let listener = TcpListener::bind(addr.to_string() + ":" + &port.to_string())
         .await
         .expect("should bind to address");
