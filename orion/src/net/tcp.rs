@@ -3,16 +3,20 @@ pub mod tcp_actors;
 use bytes::{Bytes, BytesMut};
 use tcp_actors::SocketHandle;
 
-use tokio::{io::AsyncReadExt, net::TcpListener, select};
+use tokio::{
+    io::AsyncReadExt,
+    net::{TcpListener, TcpStream},
+    select,
+};
 use tokio_util::sync::CancellationToken;
 use tracing::error;
 
 pub async fn serve_tcp(
-    addr: &str,
+    addr: String,
     port: u32,
-    event_listener: impl EventListener + 'static + Clone + Send + Sync,
+    event_listener: impl EventListener + Clone + Send + Sync + 'static,
 ) {
-    let listener = TcpListener::bind(addr.to_string() + ":" + &port.to_string())
+    let listener = TcpListener::bind(addr + ":" + &port.to_string())
         .await
         .expect("should bind to address");
     tokio::spawn(async move {
@@ -20,40 +24,7 @@ pub async fn serve_tcp(
             let result = listener.accept().await;
             match result {
                 Ok((socket, _)) => {
-                    let (mut reader, writer) = socket.into_split();
-                    let token = CancellationToken::new();
-                    let socket_handle = SocketHandle::new(writer, token.clone());
-                    let event_listener = event_listener.clone();
-                    event_listener.onopen(socket_handle.clone());
-                    tokio::spawn(async move {
-                        let mut buffer = BytesMut::with_capacity(1024);
-                        let mut pkg_extractor = PackageExtractor::new({
-                            |pkg| {
-                                event_listener.onmessage(socket_handle.clone(), pkg);
-                            }
-                        });
-                        loop {
-                            select! {
-                                result = reader.read_buf(&mut buffer) => {
-                                    match result {
-                                        Ok(n) if n != 0 => {
-                                            pkg_extractor.extract(&buffer, n, 0);
-                                        }
-                                        other => {
-                                            if let Err(e) = other {
-                                                error!("Failed to read from socket; error = {:?}", e);
-                                            }
-                                            break;
-                                        }
-                                    }
-                                }
-                                _ = token.cancelled() => {
-                                    break;
-                                }
-                            }
-                        }
-                        event_listener.onclose(socket_handle);
-                    });
+                    listen_for_data(socket, event_listener.clone());
                 }
                 Err(e) => {
                     error!("Failed to accept connection: {}", e);
@@ -63,10 +34,49 @@ pub async fn serve_tcp(
     });
 }
 
-trait EventListener {
-    fn onopen(&self, socket_handle: SocketHandle);
-    fn onmessage(&self, socket_handle: SocketHandle, msg: Bytes);
-    fn onclose(&self, socket_handle: SocketHandle);
+fn listen_for_data(
+    socket: TcpStream,
+    mut event_listener: impl EventListener + Clone + Send + Sync + 'static,
+) {
+    let (mut reader, writer) = socket.into_split();
+    let token = CancellationToken::new();
+    let socket_handle = SocketHandle::new(writer, token.clone());
+    event_listener.onopen(socket_handle.clone());
+    tokio::spawn(async move {
+        let mut buffer = BytesMut::with_capacity(1024);
+        let mut pkg_extractor = PackageExtractor::new({
+            |pkg| {
+                event_listener.clone().onmessage(socket_handle.clone(), pkg);
+            }
+        });
+        loop {
+            select! {
+                result = reader.read_buf(&mut buffer) => {
+                    match result {
+                        Ok(n) if n != 0 => {
+                            pkg_extractor.extract(&buffer, n, 0);
+                        }
+                        other => {
+                            if let Err(e) = other {
+                                error!("Failed to read from socket; error = {:?}", e);
+                            }
+                            break;
+                        }
+                    }
+                }
+                _ = token.cancelled() => {
+                    break;
+                }
+            }
+        }
+        event_listener.onclose(socket_handle);
+    });
+}
+
+pub trait EventListener {
+    fn onopen(&mut self, socket_handle: SocketHandle);
+    fn onmessage(&mut self, socket_handle: SocketHandle, msg: Bytes);
+    fn onclose(&mut self, socket_handle: SocketHandle);
 }
 
 enum ReadState {
