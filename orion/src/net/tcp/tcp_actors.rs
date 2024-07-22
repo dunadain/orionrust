@@ -1,6 +1,6 @@
 use std::sync::atomic::{AtomicU32, Ordering};
 
-use bytes::{Buf, Bytes};
+use bytes::Bytes;
 use tokio::{
     io::{AsyncWriteExt, BufWriter},
     net::tcp::OwnedWriteHalf,
