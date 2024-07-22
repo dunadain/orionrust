@@ -14,7 +14,7 @@ use tracing::error;
 pub async fn serve_tcp(
     addr: String,
     port: u32,
-    event_listener: impl EventListener + Clone + Send + Sync + 'static,
+    event_listener: impl SocketListener + Clone + Send + Sync + 'static,
 ) {
     let listener = TcpListener::bind(addr + ":" + &port.to_string())
         .await
@@ -36,7 +36,7 @@ pub async fn serve_tcp(
 
 fn listen_for_data(
     socket: TcpStream,
-    mut event_listener: impl EventListener + Clone + Send + Sync + 'static,
+    mut event_listener: impl SocketListener + Clone + Send + Sync + 'static,
 ) {
     let (mut reader, writer) = socket.into_split();
     let token = CancellationToken::new();
@@ -73,7 +73,7 @@ fn listen_for_data(
     });
 }
 
-pub trait EventListener {
+pub trait SocketListener {
     fn onopen(&mut self, socket_handle: SocketHandle);
     fn onmessage(&mut self, socket_handle: SocketHandle, msg: Bytes);
     fn onclose(&mut self, socket_handle: SocketHandle);
