@@ -7,7 +7,11 @@ use tokio::{io::AsyncReadExt, net::TcpListener, select};
 use tokio_util::sync::CancellationToken;
 use tracing::error;
 
-pub async fn serve_tcp(addr: &str, port: u32, event_listener: EventListener) {
+pub async fn serve_tcp(
+    addr: &str,
+    port: u32,
+    event_listener: impl EventListener + 'static + Clone + Send + Sync,
+) {
     let listener = TcpListener::bind(addr.to_string() + ":" + &port.to_string())
         .await
         .expect("should bind to address");
@@ -19,12 +23,13 @@ pub async fn serve_tcp(addr: &str, port: u32, event_listener: EventListener) {
                     let (mut reader, writer) = socket.into_split();
                     let token = CancellationToken::new();
                     let socket_handle = SocketHandle::new(writer, token.clone());
-                    (event_listener.onopen)(socket_handle.clone());
+                    let event_listener = event_listener.clone();
+                    event_listener.onopen(socket_handle.clone());
                     tokio::spawn(async move {
                         let mut buffer = BytesMut::with_capacity(1024);
                         let mut pkg_extractor = PackageExtractor::new({
                             |pkg| {
-                                (event_listener.onmessage)(socket_handle.clone(), pkg);
+                                event_listener.onmessage(socket_handle.clone(), pkg);
                             }
                         });
                         loop {
@@ -47,7 +52,7 @@ pub async fn serve_tcp(addr: &str, port: u32, event_listener: EventListener) {
                                 }
                             }
                         }
-                        (event_listener.onclose)(socket_handle);
+                        event_listener.onclose(socket_handle);
                     });
                 }
                 Err(e) => {
@@ -58,10 +63,10 @@ pub async fn serve_tcp(addr: &str, port: u32, event_listener: EventListener) {
     });
 }
 
-pub struct EventListener {
-    pub onopen: fn(SocketHandle),
-    pub onmessage: fn(SocketHandle, Bytes),
-    pub onclose: fn(SocketHandle),
+trait EventListener {
+    fn onopen(&self, socket_handle: SocketHandle);
+    fn onmessage(&self, socket_handle: SocketHandle, msg: Bytes);
+    fn onclose(&self, socket_handle: SocketHandle);
 }
 
 enum ReadState {
