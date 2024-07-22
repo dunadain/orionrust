@@ -1,3 +1,5 @@
+use std::sync::atomic::{AtomicU32, Ordering};
+
 use bytes::{Buf, Bytes};
 use tokio::{
     io::{AsyncWriteExt, BufWriter},
@@ -38,6 +40,7 @@ impl TcpWriteActor {
 
 #[derive(Clone)]
 pub struct SocketHandle {
+    id: u32,
     sender: mpsc::Sender<Message>,
 }
 
@@ -51,7 +54,12 @@ impl SocketHandle {
             cancel_token,
         };
         tokio::spawn(run_write_actor(write_actor));
-        SocketHandle { sender }
+        static ENUMERATOR: AtomicU32 = AtomicU32::new(0);
+        let id = ENUMERATOR.fetch_add(1, Ordering::SeqCst);
+        if id == u32::MAX {
+            ENUMERATOR.store(0, Ordering::SeqCst);
+        }
+        SocketHandle { sender, id }
     }
 
     pub async fn send(&self, message: Bytes) {
