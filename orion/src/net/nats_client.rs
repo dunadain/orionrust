@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use async_nats::{Message, RequestErrorKind};
 use bytes::Bytes;
 use futures::StreamExt;
@@ -22,7 +24,10 @@ impl NatsClient {
         payload: Bytes,
     ) -> Result<Message, &'static str> {
         for _ in 0..3 {
-            let result = self.client.request(subject.clone(), payload.clone()).await;
+            let req = async_nats::Request::new()
+                .payload(payload.clone())
+                .timeout(Some(Duration::from_secs(1)));
+            let result = self.client.send_request(subject.clone(), req).await;
             if let Err(e) = result {
                 error!("Failed to request message: {}", e);
                 if let RequestErrorKind::NoResponders = e.kind() {
