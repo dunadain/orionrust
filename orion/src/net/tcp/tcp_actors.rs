@@ -75,6 +75,10 @@ impl SocketHandle {
             error!("Failed to send close message; error = {:?}", e);
         }
     }
+
+    pub fn id(&self) -> u32 {
+        self.id
+    }
 }
 
 async fn run_write_actor(mut actor: TcpWriteActor) {
