@@ -77,6 +77,9 @@ impl Client {
                 self.socket.send(packet).await;
             }
             packet::PacketType::Data => {
+                if self.state.load(std::sync::atomic::Ordering::SeqCst) != READY {
+                    return;
+                }
                 let (msg_type, proto_id, id, data) = message::decode(decoded);
             }
             packet::PacketType::Kick => todo!(),
