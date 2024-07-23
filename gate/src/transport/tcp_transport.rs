@@ -3,7 +3,7 @@ use std::env;
 use bytes::Bytes;
 use orion::SocketListener;
 
-use crate::client::ClientManager;
+use crate::client::{Client, ClientManager};
 use tracing::error;
 
 struct TcpComp {
@@ -31,7 +31,9 @@ struct TcpEventListener {
 
 impl SocketListener for TcpEventListener {
     fn onopen(&mut self, socket_handle: orion::SocketHandle) {
-        self.client_mgr.add_client(socket_handle);
+        let id = socket_handle.id();
+        let client = Client::new(socket_handle);
+        self.client_mgr.add_client(id, client);
     }
 
     fn onmessage(&mut self, socket_handle: orion::SocketHandle, pkg: Bytes) {

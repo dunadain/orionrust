@@ -5,8 +5,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use orion::SocketHandle;
-use socket_client::Client;
+pub use socket_client::Client;
 use tracing::error;
 
 #[derive(Clone)]
@@ -25,9 +24,7 @@ impl ClientManager {
         }
     }
 
-    pub fn add_client(&mut self, socket_handle: SocketHandle) {
-        let id = socket_handle.id();
-        let client = Client::new(socket_handle);
+    pub fn add_client(&mut self, id: u32, client: Client) {
         let mut map = self.client_map.lock().unwrap();
         if map.contains_key(&id) {
             error!("Client already exists: {}", id);
