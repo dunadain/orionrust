@@ -372,6 +372,14 @@ dependencies = [
 [[package]]
 name = "gate"
 version = "0.1.0"
+dependencies = [
+ "bytes",
+ "orion",
+ "tokio",
+ "tokio-util",
+ "tracing",
+ "tracing-subscriber",
+]
 
 [[package]]
 name = "generic-array"
