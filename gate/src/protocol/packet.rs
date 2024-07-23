@@ -40,3 +40,29 @@ fn get_pkt_type(pkt_type: u8) -> PacketType {
         _ => panic!("Invalid packet type"),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_encode() {
+        let data = Bytes::from("hello");
+        let pkt = encode(PacketType::Data, data);
+        assert_eq!(pkt.len(), 9);
+        assert_eq!(pkt[0], 3);
+        assert_eq!(pkt[1], 0);
+        assert_eq!(pkt[2], 0);
+        assert_eq!(pkt[3], 5);
+        assert_eq!(&pkt[4..], b"hello");
+    }
+
+    #[test]
+    fn test_decode() {
+        let data = Bytes::from("hello");
+        let pkt = encode(PacketType::Data, data);
+        let (pkt_type, data) = decode(pkt);
+        assert_eq!(pkt_type as u8, PacketType::Data as u8);
+        assert_eq!(data, Bytes::from("hello"));
+    }
+}
