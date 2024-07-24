@@ -6,11 +6,11 @@ use orion::SocketListener;
 use crate::client::{socket_client::Client, ClientManager};
 use tracing::error;
 
-struct TcpComp {
+struct TcpTransport {
     client_mgr: ClientManager,
 }
 
-impl TcpComp {
+impl TcpTransport {
     fn start(&self) {
         let addr = env::var("ADDR").unwrap_or_else(|_| "127.0.0.1:8080".to_string());
         let port: u32 = env::var("PORT")
