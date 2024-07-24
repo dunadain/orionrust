@@ -3,7 +3,7 @@ use std::env;
 use bytes::Bytes;
 use orion::SocketListener;
 
-use crate::client::{Client, ClientManager};
+use crate::client::{socket_client::Client, ClientManager};
 use tracing::error;
 
 struct TcpComp {
@@ -41,7 +41,7 @@ impl SocketListener for TcpEventListener {
         match client {
             Some(inner) => {
                 tokio::spawn(async move {
-                    inner.receive_msg(pkg).await;
+                    inner.receive_msg(pkg);
                 });
             }
             None => {

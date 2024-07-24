@@ -38,7 +38,7 @@ impl TcpWriteActor {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct SocketHandle {
     id: u32,
     sender: mpsc::Sender<Message>,
