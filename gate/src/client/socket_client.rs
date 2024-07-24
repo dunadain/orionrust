@@ -27,7 +27,7 @@ pub struct Client {
 impl NetClient for Client {
     fn receive_msg(self: Arc<Self>, msg: Bytes) {
         tokio::spawn(async move {
-            let (packet_type, decoded) = packet::decode(msg);
+            let (packet_type, decoded_body) = packet::decode(msg);
             match packet_type {
                 packet::PacketType::Handshake => {
                     if self.state.load(std::sync::atomic::Ordering::SeqCst) != WAIT_FOR_HANDSHAKE {
@@ -59,7 +59,7 @@ impl NetClient for Client {
                     if self.state.load(std::sync::atomic::Ordering::SeqCst) != READY {
                         return;
                     }
-                    let (msg_type, proto_id, id, data) = message::decode(decoded);
+                    let (msg_type, proto_id, id, data) = message::decode(decoded_body);
                 }
                 packet::PacketType::Kick => todo!(),
                 packet::PacketType::Error => todo!(),
