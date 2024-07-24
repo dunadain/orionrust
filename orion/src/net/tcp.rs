@@ -46,7 +46,7 @@ fn listen_for_data(
         let mut buffer = BytesMut::with_capacity(1024);
         let mut pkg_extractor = PackageExtractor::new({
             |pkg| {
-                event_listener.clone().onmessage(socket_handle.clone(), pkg);
+                event_listener.onmessage(socket_handle.clone(), pkg);
             }
         });
         loop {
@@ -75,7 +75,7 @@ fn listen_for_data(
 
 pub trait SocketListener {
     fn onopen(&mut self, socket_handle: SocketHandle);
-    fn onmessage(&mut self, socket_handle: SocketHandle, msg: Bytes);
+    fn onmessage(&self, socket_handle: SocketHandle, msg: Bytes);
     fn onclose(&mut self, socket_handle: SocketHandle);
 }
 
