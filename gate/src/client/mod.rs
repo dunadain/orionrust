@@ -165,20 +165,18 @@ mod tests {
         assert_eq!(has, false);
     }
 
-    // Additional tests can be added here
-}
+    #[derive(Clone)]
+    struct MockClient;
 
-#[derive(Clone)]
-struct MockClient;
-
-impl MockClient {
-    fn new() -> Self {
-        MockClient
+    impl MockClient {
+        fn new() -> Self {
+            MockClient
+        }
     }
-}
 
-impl NetClient for MockClient {
-    fn receive_msg(self: Arc<Self>, msg: Bytes) {
-        // Mock implementation
+    impl NetClient for MockClient {
+        fn receive_msg(self: Arc<Self>, msg: Bytes) {
+            // Mock implementation
+        }
     }
 }
