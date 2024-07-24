@@ -146,7 +146,7 @@ mod tests {
             None => false,
         };
 
-        assert_eq!(has, true);
+        assert!(has);
     }
 
     #[test]
@@ -162,7 +162,7 @@ mod tests {
             Some(_) => true,
             None => false,
         };
-        assert_eq!(has, false);
+        assert!(!has);
     }
 
     #[derive(Clone)]
