@@ -4,7 +4,7 @@ use std::env;
 use bytes::Bytes;
 use orion::SocketListener;
 
-use crate::client::{self, socket_client::Client, ClientManager};
+use crate::client::{socket_client::Client, ClientManager};
 use tracing::error;
 
 struct TcpTransport {
