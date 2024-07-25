@@ -49,12 +49,14 @@ impl ClientManager {
         }
     }
 
-    pub fn remove_client(&self, id: u32) {
-        if let Some(_) = self.client_map.lock().unwrap().remove(&id) {
+    pub fn remove_client(&self, id: u32) -> Option<Arc<dyn NetClient>> {
+        let wrapper = self.client_map.lock().unwrap().remove(&id);
+        if let Some(_) = wrapper {
             if let Some(uid) = self.reverse_bound_clients.lock().unwrap().remove(&id) {
                 self.bound_clients.lock().unwrap().remove(&uid);
             }
         }
+        wrapper
     }
 
     pub fn get_client(&self, id: u32) -> Option<Arc<dyn NetClient>> {
@@ -71,7 +73,9 @@ impl ClientManager {
 }
 
 pub trait NetClient: Send + Sync {
+    fn onopen(self: Arc<Self>);
     fn receive_msg(self: Arc<Self>, msg: Bytes);
+    fn onclose(self: Arc<Self>);
 }
 
 #[cfg(test)]
@@ -177,6 +181,14 @@ mod tests {
     impl NetClient for MockClient {
         fn receive_msg(self: Arc<Self>, msg: Bytes) {
             // Mock implementation
+        }
+
+        fn onopen(self: Arc<Self>) {
+            todo!()
+        }
+
+        fn onclose(self: Arc<Self>) {
+            todo!()
         }
     }
 }
