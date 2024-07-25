@@ -40,9 +40,7 @@ impl SocketListener for TcpEventListener {
         let client = self.client_mgr.get_client(socket_handle.id());
         match client {
             Some(inner) => {
-                tokio::spawn(async move {
-                    inner.receive_msg(pkg);
-                });
+                inner.receive_msg(pkg);
             }
             None => {
                 error!("Failed to find client for socket {}", socket_handle.id());
