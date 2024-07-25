@@ -17,7 +17,7 @@ const READY: u8 = 2;
 
 const HEARTBEAT_INTERVAL: u8 = 20;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Client {
     socket: SocketHandle,
     state: Arc<AtomicU8>,
@@ -25,51 +25,47 @@ pub struct Client {
 }
 
 impl NetClient for Client {
-    fn receive_msg(self: Arc<Self>, msg: Bytes) {
-        tokio::spawn(async move {
-            let (packet_type, decoded_body) = packet::decode(msg);
-            match packet_type {
-                packet::PacketType::Handshake => {
-                    if self.state.load(std::sync::atomic::Ordering::SeqCst) != WAIT_FOR_HANDSHAKE {
-                        return;
-                    }
-                    let mut send_bytes = BytesMut::new();
-                    send_bytes.put_u8(20); // heartbeat interval
-                    let packet = packet::encode(packet::PacketType::Handshake, send_bytes.freeze());
-                    self.state
-                        .store(WAIT_FOR_HANDSHAKE_ACK, std::sync::atomic::Ordering::SeqCst);
-                    self.socket.send(packet).await;
+    async fn receive_msg(self: Arc<Self>, msg: Bytes) {
+        let (packet_type, decoded_body) = packet::decode(msg);
+        match packet_type {
+            packet::PacketType::Handshake => {
+                if self.state.load(std::sync::atomic::Ordering::SeqCst) != WAIT_FOR_HANDSHAKE {
+                    return;
                 }
-                packet::PacketType::HandshakeAck => {
-                    if self.state.load(std::sync::atomic::Ordering::SeqCst)
-                        != WAIT_FOR_HANDSHAKE_ACK
-                    {
-                        return;
-                    }
-                    self.state.store(READY, std::sync::atomic::Ordering::SeqCst);
-                }
-                packet::PacketType::Heartbeat => {
-                    let _ = self.heartbeat_recved.send(()).await;
-                    let packet = packet::encode(packet::PacketType::Heartbeat, Bytes::new());
-                    self.socket.send(packet).await;
-                }
-                packet::PacketType::Data => {
-                    if self.state.load(std::sync::atomic::Ordering::SeqCst) != READY {
-                        return;
-                    }
-                    let (msg_type, proto_id, id, data) = message::decode(decoded_body);
-                }
-                packet::PacketType::Kick => todo!(),
-                packet::PacketType::Error => todo!(),
+                let mut send_bytes = BytesMut::new();
+                send_bytes.put_u8(20); // heartbeat interval
+                let packet = packet::encode(packet::PacketType::Handshake, send_bytes.freeze());
+                self.state
+                    .store(WAIT_FOR_HANDSHAKE_ACK, std::sync::atomic::Ordering::SeqCst);
+                self.socket.send(packet).await;
             }
-        });
+            packet::PacketType::HandshakeAck => {
+                if self.state.load(std::sync::atomic::Ordering::SeqCst) != WAIT_FOR_HANDSHAKE_ACK {
+                    return;
+                }
+                self.state.store(READY, std::sync::atomic::Ordering::SeqCst);
+            }
+            packet::PacketType::Heartbeat => {
+                let _ = self.heartbeat_recved.send(()).await;
+                let packet = packet::encode(packet::PacketType::Heartbeat, Bytes::new());
+                self.socket.send(packet).await;
+            }
+            packet::PacketType::Data => {
+                if self.state.load(std::sync::atomic::Ordering::SeqCst) != READY {
+                    return;
+                }
+                let (msg_type, proto_id, id, data) = message::decode(decoded_body);
+            }
+            packet::PacketType::Kick => todo!(),
+            packet::PacketType::Error => todo!(),
+        }
     }
 
-    fn onopen(self: Arc<Self>) {
+    async fn onopen(self: Arc<Self>) {
         todo!()
     }
 
-    fn onclose(self: Arc<Self>) {
+    async fn onclose(self: Arc<Self>) {
         todo!()
     }
 }

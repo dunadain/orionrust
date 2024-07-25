@@ -9,13 +9,16 @@ use bytes::Bytes;
 use tracing::error;
 
 #[derive(Clone)]
-pub struct ClientManager {
-    client_map: Arc<Mutex<hash_map::HashMap<u32, Arc<dyn NetClient>>>>,
+pub struct ClientManager<T: NetClient> {
+    client_map: Arc<Mutex<hash_map::HashMap<u32, Arc<T>>>>,
     bound_clients: Arc<Mutex<hash_map::HashMap<String, u32>>>,
     reverse_bound_clients: Arc<Mutex<hash_map::HashMap<u32, String>>>,
 }
 
-impl ClientManager {
+impl<T> ClientManager<T>
+where
+    T: NetClient,
+{
     pub fn new() -> Self {
         Self {
             client_map: Arc::new(Mutex::new(hash_map::HashMap::new())),
@@ -24,7 +27,7 @@ impl ClientManager {
         }
     }
 
-    pub fn add_client(&mut self, id: u32, client: impl NetClient + 'static) {
+    pub fn add_client(&mut self, id: u32, client: T) {
         let mut map = self.client_map.lock().unwrap();
         if map.contains_key(&id) {
             error!("Client already exists: {}", id);
@@ -49,7 +52,7 @@ impl ClientManager {
         }
     }
 
-    pub fn remove_client(&self, id: u32) -> Option<Arc<dyn NetClient>> {
+    pub fn remove_client(&self, id: u32) -> Option<Arc<T>> {
         let wrapper = self.client_map.lock().unwrap().remove(&id);
         if let Some(_) = wrapper {
             if let Some(uid) = self.reverse_bound_clients.lock().unwrap().remove(&id) {
@@ -59,11 +62,11 @@ impl ClientManager {
         wrapper
     }
 
-    pub fn get_client(&self, id: u32) -> Option<Arc<dyn NetClient>> {
+    pub fn get_client(&self, id: u32) -> Option<Arc<T>> {
         self.client_map.lock().unwrap().get(&id).cloned()
     }
 
-    pub fn get_client_by_uid(&self, uid: &str) -> Option<Arc<dyn NetClient>> {
+    pub fn get_client_by_uid(&self, uid: &str) -> Option<Arc<T>> {
         if let Some(socket_id) = self.bound_clients.lock().unwrap().get(uid) {
             self.client_map.lock().unwrap().get(socket_id).cloned()
         } else {
@@ -73,9 +76,9 @@ impl ClientManager {
 }
 
 pub trait NetClient: Send + Sync {
-    fn onopen(self: Arc<Self>);
-    fn receive_msg(self: Arc<Self>, msg: Bytes);
-    fn onclose(self: Arc<Self>);
+    async fn onopen(self: Arc<Self>);
+    async fn receive_msg(self: Arc<Self>, msg: Bytes);
+    async fn onclose(self: Arc<Self>);
 }
 
 #[cfg(test)]
@@ -155,7 +158,7 @@ mod tests {
 
     #[test]
     fn test_get_client_by_uid() {
-        let client_manager = ClientManager::new();
+        let client_manager = ClientManager::<MockClient>::new();
         let uid = "user1".to_string();
         let socket_id = 1;
         client_manager.bind_connection(uid.clone(), socket_id);
@@ -179,15 +182,15 @@ mod tests {
     }
 
     impl NetClient for MockClient {
-        fn receive_msg(self: Arc<Self>, msg: Bytes) {
+        async fn receive_msg(self: Arc<Self>, msg: Bytes) {
             // Mock implementation
         }
 
-        fn onopen(self: Arc<Self>) {
+        async fn onopen(self: Arc<Self>) {
             todo!()
         }
 
-        fn onclose(self: Arc<Self>) {
+        async fn onclose(self: Arc<Self>) {
             todo!()
         }
     }

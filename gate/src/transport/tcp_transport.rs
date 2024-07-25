@@ -1,3 +1,4 @@
+use crate::client::NetClient;
 use std::env;
 
 use bytes::Bytes;
@@ -7,7 +8,7 @@ use crate::client::{self, socket_client::Client, ClientManager};
 use tracing::error;
 
 struct TcpTransport {
-    client_mgr: ClientManager,
+    client_mgr: ClientManager<Client>,
 }
 
 impl TcpTransport {
@@ -26,7 +27,7 @@ impl TcpTransport {
 
 #[derive(Clone)]
 struct TcpEventListener {
-    client_mgr: ClientManager,
+    client_mgr: ClientManager<Client>,
 }
 
 impl SocketListener for TcpEventListener {
@@ -38,20 +39,24 @@ impl SocketListener for TcpEventListener {
 
     fn onmessage(&self, socket_handle: orion::SocketHandle, pkg: Bytes) {
         let client = self.client_mgr.get_client(socket_handle.id());
-        match client {
-            Some(inner) => {
-                inner.receive_msg(pkg);
+        tokio::spawn(async move {
+            match client {
+                Some(inner) => {
+                    inner.receive_msg(pkg).await;
+                }
+                None => {
+                    error!("Failed to find client for socket {}", socket_handle.id());
+                }
             }
-            None => {
-                error!("Failed to find client for socket {}", socket_handle.id());
-            }
-        }
+        });
     }
 
     fn onclose(&mut self, socket_handle: orion::SocketHandle) {
         let result = self.client_mgr.remove_client(socket_handle.id());
-        if let Some(client) = result {
-            client.onclose();
-        }
+        tokio::spawn(async move {
+            if let Some(client) = result {
+                client.onclose().await;
+            }
+        });
     }
 }
