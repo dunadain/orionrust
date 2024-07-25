@@ -3,7 +3,7 @@ use std::env;
 use bytes::Bytes;
 use orion::SocketListener;
 
-use crate::client::{socket_client::Client, ClientManager};
+use crate::client::{self, socket_client::Client, ClientManager};
 use tracing::error;
 
 struct TcpTransport {
@@ -51,6 +51,9 @@ impl SocketListener for TcpEventListener {
     }
 
     fn onclose(&mut self, socket_handle: orion::SocketHandle) {
-        self.client_mgr.remove_client(socket_handle.id());
+        let result = self.client_mgr.remove_client(socket_handle.id());
+        if let Some(client) = result {
+            client.onclose();
+        }
     }
 }

@@ -66,6 +66,14 @@ impl NetClient for Client {
             }
         });
     }
+
+    fn onopen(self: Arc<Self>) {
+        todo!()
+    }
+
+    fn onclose(self: Arc<Self>) {
+        todo!()
+    }
 }
 
 impl Client {
