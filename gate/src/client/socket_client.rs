@@ -46,8 +46,6 @@ impl NetClient for Client {
                     {
                         return;
                     }
-                    let packet = packet::encode(packet::PacketType::HandshakeAck, Bytes::new());
-                    self.socket.send(packet).await;
                     self.state.store(READY, std::sync::atomic::Ordering::SeqCst);
                 }
                 packet::PacketType::Heartbeat => {
