@@ -375,6 +375,7 @@ version = "0.1.0"
 dependencies = [
  "bytes",
  "orion",
+ "serde_json",
  "strum",
  "strum_macros",
  "tokio",
