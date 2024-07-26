@@ -6,6 +6,7 @@ use std::{
 use bytes::{BufMut, Bytes, BytesMut};
 use orion::SocketHandle;
 use tokio::{select, sync::mpsc, time::sleep};
+use tokio_util::sync::CancellationToken;
 
 use crate::protocol::{message, packet};
 
@@ -22,6 +23,7 @@ pub struct Client {
     socket: SocketHandle,
     state: Arc<AtomicU8>,
     heartbeat_recved: mpsc::Sender<()>,
+    dead: CancellationToken,
 }
 
 impl NetClient for Client {
@@ -66,7 +68,14 @@ impl NetClient for Client {
     }
 
     async fn onclose(self: Arc<Self>) {
-        todo!()
+        // TODO: 把此用户相关的数据从缓冲或者其他服务器清理
+        self.dead.cancel();
+    }
+
+    async fn close(self: Arc<Self>) {
+        self.socket.close().await;
+        let token = self.dead.clone();
+        token.cancelled().await;
     }
 }
 
@@ -94,6 +103,7 @@ impl Client {
             socket,
             state: Arc::new(AtomicU8::new(0)),
             heartbeat_recved: tx,
+            dead: CancellationToken::new(),
         }
     }
 }

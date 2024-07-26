@@ -79,6 +79,7 @@ pub trait NetClient: Send + Sync {
     async fn onopen(self: Arc<Self>);
     async fn receive_msg(self: Arc<Self>, msg: Bytes);
     async fn onclose(self: Arc<Self>);
+    async fn close(self: Arc<Self>);
 }
 
 #[cfg(test)]
@@ -191,6 +192,10 @@ mod tests {
         }
 
         async fn onclose(self: Arc<Self>) {
+            todo!()
+        }
+
+        async fn close(self: Arc<Self>) {
             todo!()
         }
     }

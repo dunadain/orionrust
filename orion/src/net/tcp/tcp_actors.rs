@@ -18,6 +18,7 @@ struct TcpWriteActor {
     receiver: mpsc::Receiver<Message>,
     writer: BufWriter<OwnedWriteHalf>,
     cancel_token: CancellationToken,
+    is_closing: bool,
 }
 
 impl TcpWriteActor {
@@ -31,6 +32,10 @@ impl TcpWriteActor {
                 }
             }
             Message::Close => {
+                if self.is_closing {
+                    return;
+                }
+                self.is_closing = true;
                 let _ = self.writer.shutdown().await;
                 self.cancel_token.cancel();
             }
@@ -52,6 +57,7 @@ impl SocketHandle {
             receiver,
             writer: buf_writer,
             cancel_token,
+            is_closing: false,
         };
         tokio::spawn(run_write_actor(write_actor));
         static ENUMERATOR: AtomicU32 = AtomicU32::new(0);
