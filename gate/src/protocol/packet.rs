@@ -11,6 +11,14 @@ pub enum PacketType {
     Error,
 }
 
+/// packet format:
+///
+/// +------+-------------+--------+
+/// | type | body length |  body  |
+/// +------+-------------+--------+
+/// | 1B   | 3B          | N      |
+/// +------+-------------+--------+
+///
 pub fn encode(pkt_type: PacketType, bytes: Bytes) -> Bytes {
     let length = bytes.len();
     let mut buf = BytesMut::with_capacity(PKT_HEAD_LEN + length);
