@@ -5,6 +5,7 @@ use std::{
 
 use bytes::{BufMut, Bytes, BytesMut};
 use orion::SocketHandle;
+use redis::aio::MultiplexedConnection;
 use tokio::{select, sync::mpsc, time::sleep};
 use tokio_util::sync::CancellationToken;
 
@@ -24,6 +25,7 @@ pub struct Client {
     state: Arc<AtomicU8>,
     heartbeat_recved: mpsc::Sender<()>,
     dead: CancellationToken,
+    redis: MultiplexedConnection,
 }
 
 impl NetClient for Client {
@@ -80,7 +82,7 @@ impl NetClient for Client {
 }
 
 impl Client {
-    pub fn new(socket: SocketHandle) -> Self {
+    pub fn new(socket: SocketHandle, redis: MultiplexedConnection) -> Self {
         let (tx, mut rx) = mpsc::channel(1);
 
         let s = socket.clone();
@@ -104,6 +106,7 @@ impl Client {
             state: Arc::new(AtomicU8::new(0)),
             heartbeat_recved: tx,
             dead: CancellationToken::new(),
+            redis,
         }
     }
 }

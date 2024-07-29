@@ -43,6 +43,7 @@ impl Application {
     fn shutdown(&self) {}
 }
 
+// only immutable data can be stored in a static variable
 pub fn app() -> &'static Application {
     static CLIENTMGR: OnceLock<Application> = OnceLock::new();
     CLIENTMGR.get_or_init(|| Application::new())
