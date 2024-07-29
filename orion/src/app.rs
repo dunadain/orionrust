@@ -45,6 +45,6 @@ impl Application {
 
 // only immutable data can be stored in a static variable
 pub fn app() -> &'static Application {
-    static CLIENTMGR: OnceLock<Application> = OnceLock::new();
-    CLIENTMGR.get_or_init(|| Application::new())
+    static APP: OnceLock<Application> = OnceLock::new();
+    APP.get_or_init(|| Application::new())
 }
