@@ -19,19 +19,17 @@ pub async fn serve_tcp(
     let listener = TcpListener::bind(addr + ":" + &port.to_string())
         .await
         .expect("should bind to address");
-    tokio::spawn(async move {
-        loop {
-            let result = listener.accept().await;
-            match result {
-                Ok((socket, _)) => {
-                    listen_for_data(socket, event_listener.clone());
-                }
-                Err(e) => {
-                    error!("Failed to accept connection: {}", e);
-                }
+    loop {
+        let result = listener.accept().await;
+        match result {
+            Ok((socket, _)) => {
+                listen_for_data(socket, event_listener.clone());
+            }
+            Err(e) => {
+                error!("Failed to accept connection: {}", e);
             }
         }
-    });
+    }
 }
 
 fn listen_for_data(

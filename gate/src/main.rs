@@ -2,7 +2,7 @@ use std::env;
 
 use gate::{
     client::{socket_client::Client, ClientManager},
-    global,
+    global, transport,
 };
 use orion::{app, async_redis};
 
@@ -27,5 +27,12 @@ async fn main() {
     global::set_redis(redis);
     let clientmgr: ClientManager<Client> = ClientManager::new();
     global::set_client_manager(clientmgr);
+
+    let addr = env::var("ADDR").unwrap_or_else(|_| "127.0.0.1".to_string());
+    let port: u32 = env::var("PORT")
+        .unwrap_or_else(|_| "8001".to_string())
+        .parse()
+        .unwrap();
+    transport::tcp_transport::start(addr, port);
     app().start().await;
 }

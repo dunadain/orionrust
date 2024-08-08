@@ -1,5 +1,4 @@
 use crate::{client::NetClient, global};
-use std::env;
 
 use bytes::Bytes;
 use orion::SocketListener;
@@ -7,27 +6,17 @@ use orion::SocketListener;
 use crate::client::{socket_client::Client, ClientManager};
 use tracing::error;
 
-struct TcpTransport {}
-
-impl TcpTransport {
-    fn start(&self) {
-        let addr = env::var("ADDR").unwrap_or_else(|_| "127.0.0.1:8080".to_string());
-        let port: u32 = env::var("PORT")
-            .unwrap_or_else(|_| "8001".to_string())
-            .parse()
-            .unwrap();
-
-        tokio::spawn(async move {
-            orion::serve_tcp(
-                addr,
-                port,
-                TcpEventListener {
-                    client_mgr: global::client_manager(),
-                },
-            )
-            .await;
-        });
-    }
+pub fn start(addr: String, port: u32) {
+    tokio::spawn(async move {
+        orion::serve_tcp(
+            addr,
+            port,
+            TcpEventListener {
+                client_mgr: global::client_manager(),
+            },
+        )
+        .await;
+    });
 }
 
 #[derive(Clone)]
