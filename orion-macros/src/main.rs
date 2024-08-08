@@ -3,7 +3,7 @@ use tracing::{debug, error, info};
 
 #[init_tracing]
 fn main() {
-    info!("Hello, world!");
-    debug!("Hello, you!");
-    error!("Hello, error!");
+    // info!("Hello, world!");
+    // debug!("Hello, you!");
+    // error!("Hello, error!");
 }

@@ -7,6 +7,7 @@ use tokio::{
         unix::{signal, SignalKind},
     },
 };
+use tracing::info;
 
 pub struct Application {
     uuid: u32,
@@ -27,6 +28,7 @@ impl Application {
     }
 
     pub async fn start(&self) {
+        info!("Starting application");
         let mut sigterm = signal(SignalKind::terminate()).unwrap();
         select! {
             _ = signal::ctrl_c() => {
