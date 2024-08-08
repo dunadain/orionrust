@@ -29,6 +29,9 @@ pub fn set_client_manager(mgr: ClientManager<Client>) {
     CLIENTMANAGER.get_or_init(|| mgr);
 }
 
-pub fn client_manager() -> &'static ClientManager<Client> {
-    CLIENTMANAGER.get().expect("ClientManager not registered")
+pub fn client_manager() -> ClientManager<Client> {
+    CLIENTMANAGER
+        .get()
+        .expect("ClientManager not registered")
+        .clone()
 }

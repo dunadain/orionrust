@@ -1,4 +1,4 @@
-use crate::client::NetClient;
+use crate::{client::NetClient, global};
 use std::env;
 
 use bytes::Bytes;
@@ -8,9 +8,7 @@ use redis::aio::MultiplexedConnection;
 use crate::client::{socket_client::Client, ClientManager};
 use tracing::error;
 
-struct TcpTransport {
-    client_mgr: ClientManager<Client>,
-}
+struct TcpTransport {}
 
 impl TcpTransport {
     fn start(&self, redis: MultiplexedConnection) {
@@ -19,13 +17,13 @@ impl TcpTransport {
             .unwrap_or_else(|_| "8001".to_string())
             .parse()
             .unwrap();
-        let cmgr = self.client_mgr.clone();
+
         tokio::spawn(async move {
             orion::serve_tcp(
                 addr,
                 port,
                 TcpEventListener {
-                    client_mgr: cmgr,
+                    client_mgr: global::client_manager(),
                     redis,
                 },
             )
