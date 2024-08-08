@@ -407,6 +407,7 @@ version = "0.1.0"
 dependencies = [
  "bytes",
  "orion",
+ "orion-macros",
  "redis 0.26.0",
  "redis-macros",
  "serde",

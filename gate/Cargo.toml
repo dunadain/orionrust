@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 orion = { path = "../orion" }
+orion-macros = { path = "../orion-macros"}
 tokio = { version = "1.38.0", features = ["full"] }
 tokio-util = "0.7.11"
 tracing = "0.1.40"
