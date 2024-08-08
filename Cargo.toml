@@ -3,4 +3,4 @@ resolver = "2"
 members = [
     "gate",
     "orion"
-]
+, "orion-macros"]
