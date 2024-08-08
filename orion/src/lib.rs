@@ -7,3 +7,5 @@ pub use net::tcp::tcp_actors::SocketHandle;
 pub use net::tcp::SocketListener;
 
 pub mod async_redis;
+
+pub use orion_macros::init_tracing;
