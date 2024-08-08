@@ -43,7 +43,7 @@ struct TcpEventListener {
 impl SocketListener for TcpEventListener {
     fn onopen(&mut self, socket_handle: orion::SocketHandle) {
         let id = socket_handle.id();
-        let client = Client::new(socket_handle, self.redis.clone());
+        let client = Client::new(socket_handle);
         self.client_mgr.add_client(id, client);
     }
 

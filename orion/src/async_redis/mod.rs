@@ -7,7 +7,7 @@ use redis::{
 use tokio::{select, time::sleep};
 
 /// connection manager will reconnect to redis if the connection is lost
-pub async fn connect(url: &str) -> ConnectionManager {
+pub async fn connect(url: String) -> ConnectionManager {
     let client = Client::open(url).expect("Failed to create redis client");
     let config = ConnectionManagerConfig::new()
         .set_connection_timeout(Duration::from_secs(5))
