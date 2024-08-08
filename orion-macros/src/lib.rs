@@ -4,8 +4,9 @@ use syn::{parse_macro_input, Stmt};
 
 #[proc_macro_attribute]
 pub fn init_tracing(_: TokenStream, item: TokenStream) -> TokenStream {
+    // eprintln!("inititem: {:#?}", item);
     let mut item_fn = parse_macro_input!(item as syn::ItemFn);
-    // eprintln!("itemfn: {:#?}", item_fn);
+    // eprintln!("inititemfn: {:#?}", item_fn);
     let stmts = &mut item_fn.block.stmts;
     let stmt1: Stmt = syn::parse2(
         quote! {
@@ -31,3 +32,11 @@ pub fn init_tracing(_: TokenStream, item: TokenStream) -> TokenStream {
     stmts.insert(0, stmt1);
     item_fn.to_token_stream().into()
 }
+
+// #[proc_macro_attribute]
+// pub fn asshole(_: TokenStream, item: TokenStream) -> TokenStream {
+//     eprintln!("itemtokens: {:#?}", item);
+//     let item_fn = parse_macro_input!(item as syn::ItemFn);
+//     eprintln!("itemfn: {:#?}", item_fn);
+//     quote! {}.into()
+// }
