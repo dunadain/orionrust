@@ -42,17 +42,14 @@ fn listen_for_data(
     event_listener.onopen(socket_handle.clone());
     tokio::spawn(async move {
         let mut buffer = BytesMut::with_capacity(1024);
-        let mut pkg_extractor = PackageExtractor::new({
-            |pkg| {
-                event_listener.onmessage(socket_handle.clone(), pkg);
-            }
-        });
+        let mut pkg_extractor =
+            PackageExtractor::new(event_listener.clone(), socket_handle.clone());
         loop {
             select! {
                 result = reader.read_buf(&mut buffer) => {
                     match result {
                         Ok(n) if n != 0 => {
-                            pkg_extractor.extract(&buffer, n, 0);
+                            pkg_extractor.extract(&buffer, n, 0).await;
                         }
                         other => {
                             if let Err(e) = other {
@@ -73,7 +70,11 @@ fn listen_for_data(
 
 pub trait SocketListener {
     fn onopen(&mut self, socket_handle: SocketHandle);
-    fn onmessage(&self, socket_handle: SocketHandle, msg: Bytes);
+    fn onmessage(
+        &self,
+        socket_handle: SocketHandle,
+        msg: Bytes,
+    ) -> impl std::future::Future<Output = ()> + Send;
     fn onclose(&mut self, socket_handle: SocketHandle);
 }
 
@@ -83,27 +84,26 @@ enum ReadState {
 }
 
 const HEADER_SIZE: usize = 4;
-struct PackageExtractor<F> {
+struct PackageExtractor<F: SocketListener> {
     pkg_buffer: BytesMut,
     pkg_buffer_offset: usize, // for header and msg
     state: ReadState,
-    onpkgcomplete: F,
+    event_listener: F,
+    socket_handle: SocketHandle,
 }
 
-impl<F> PackageExtractor<F>
-where
-    F: Fn(Bytes) -> (),
-{
-    fn new(onpkgcomplete: F) -> Self {
+impl<F: SocketListener> PackageExtractor<F> {
+    fn new(event_listener: F, socket_handle: SocketHandle) -> Self {
         Self {
             pkg_buffer: BytesMut::with_capacity(HEADER_SIZE),
             pkg_buffer_offset: 0,
             state: ReadState::ReadingHeader,
-            onpkgcomplete,
+            event_listener,
+            socket_handle,
         }
     }
 
-    fn extract(&mut self, bytes: &BytesMut, len: usize, mut bytes_offset: usize) {
+    async fn extract(&mut self, bytes: &BytesMut, len: usize, mut bytes_offset: usize) {
         let target_size = match self.state {
             ReadState::ReadingHeader => HEADER_SIZE,
             ReadState::ReadingBody => self.pkg_buffer.len(),
@@ -125,7 +125,9 @@ where
                     self.state = ReadState::ReadingBody;
                 }
                 ReadState::ReadingBody => {
-                    (self.onpkgcomplete)(self.pkg_buffer.clone().freeze());
+                    self.event_listener
+                        .onmessage(self.socket_handle.clone(), self.pkg_buffer.clone().freeze())
+                        .await;
                     self.pkg_buffer.clear();
                     self.pkg_buffer_offset = 0;
                     self.state = ReadState::ReadingHeader;
@@ -133,7 +135,7 @@ where
             }
         }
         if bytes_offset < len {
-            self.extract(bytes, len, bytes_offset);
+            self.extract(bytes, len, bytes_offset).await;
         }
     }
 }

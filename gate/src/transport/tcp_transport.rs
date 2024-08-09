@@ -31,18 +31,16 @@ impl SocketListener for TcpEventListener {
         self.client_mgr.add_client(id, client);
     }
 
-    fn onmessage(&self, socket_handle: orion::SocketHandle, pkg: Bytes) {
+    async fn onmessage(&self, socket_handle: orion::SocketHandle, pkg: Bytes) {
         let client = self.client_mgr.get_client(socket_handle.id());
-        tokio::spawn(async move {
-            match client {
-                Some(inner) => {
-                    inner.receive_msg(pkg).await;
-                }
-                None => {
-                    error!("Failed to find client for socket {}", socket_handle.id());
-                }
+        match client {
+            Some(inner) => {
+                inner.receive_msg(pkg).await;
             }
-        });
+            None => {
+                error!("Failed to find client for socket {}", socket_handle.id());
+            }
+        }
     }
 
     fn onclose(&mut self, socket_handle: orion::SocketHandle) {
