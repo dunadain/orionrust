@@ -26,7 +26,7 @@ pub async fn connect(url: String) -> ConnectionManager {
                 Err(e) => panic!("Failed to connect to redis: {}", e),
             }
         }
-        _ = sleep(Duration::from_secs(20)) => {
+        _ = sleep(Duration::from_secs(10)) => {
             panic!("Failed to connect to redis: timeout");
         }
     }
