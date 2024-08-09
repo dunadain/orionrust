@@ -7,8 +7,12 @@ use bytes::{BufMut, Bytes, BytesMut};
 use orion::SocketHandle;
 use tokio::{select, sync::mpsc, time::sleep};
 use tokio_util::sync::CancellationToken;
+use tracing::error;
 
-use crate::protocol::{message, packet};
+use crate::{
+    global,
+    protocol::{message, packet},
+};
 
 use super::NetClient;
 
@@ -34,8 +38,22 @@ impl NetClient for Client {
                 if self.state.load(std::sync::atomic::Ordering::SeqCst) != WAIT_FOR_HANDSHAKE {
                     return;
                 }
+                let uid_len = decoded_body[0];
+                let uid_bytes = decoded_body.slice(1..(uid_len + 1) as usize);
+                let uid = String::from_utf8(uid_bytes.to_vec());
+                match uid {
+                    Ok(uid) => {
+                        // TODO: 剔除重复登录用户
+                        global::client_manager_copy().bind_connection(uid, self.socket.id());
+                    }
+                    Err(e) => {
+                        error!("Failed to parse uid: {}", e);
+                        self.socket.close().await;
+                        return;
+                    }
+                }
                 let mut send_bytes = BytesMut::new();
-                send_bytes.put_u8(20); // heartbeat interval
+                send_bytes.put_u8(HEARTBEAT_INTERVAL); // heartbeat interval
                 let packet = packet::encode(packet::PacketType::Handshake, send_bytes.freeze());
                 self.state
                     .store(WAIT_FOR_HANDSHAKE_ACK, std::sync::atomic::Ordering::SeqCst);
