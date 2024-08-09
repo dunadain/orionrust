@@ -33,16 +33,16 @@ impl Application {
         select! {
             _ = signal::ctrl_c() => {
                 println!("Received SIGINT");
-                self.shutdown();
+                self.shutdown().await;
             }
             _ = sigterm.recv() => {
                 println!("Received SIGTERM");
-                self.shutdown();
+                self.shutdown().await;
             }
         }
     }
 
-    fn shutdown(&self) {}
+    async fn shutdown(&self) {}
 }
 
 // only immutable data can be stored in a static variable
