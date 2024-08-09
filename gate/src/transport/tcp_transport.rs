@@ -12,7 +12,7 @@ pub fn start(addr: String, port: u32) {
             addr,
             port,
             TcpEventListener {
-                client_mgr: global::client_manager(),
+                client_mgr: global::client_manager_copy(),
             },
         )
         .await;

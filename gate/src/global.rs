@@ -13,7 +13,7 @@ pub fn set_redis(client: ConnectionManager) {
     REDIS.get_or_init(|| client);
 }
 
-pub fn redis() -> ConnectionManager {
+pub fn redis_copy() -> ConnectionManager {
     REDIS.get().expect("Redis not registered").clone()
 }
 
@@ -29,7 +29,7 @@ pub fn set_client_manager(mgr: ClientManager<Client>) {
     CLIENTMANAGER.get_or_init(|| mgr);
 }
 
-pub fn client_manager() -> ClientManager<Client> {
+pub fn client_manager_copy() -> ClientManager<Client> {
     CLIENTMANAGER
         .get()
         .expect("ClientManager not registered")
