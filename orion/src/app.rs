@@ -28,7 +28,7 @@ impl Application {
     }
 
     pub async fn start(&self) {
-        info!("Starting application");
+        info!("Application has started");
         let mut sigterm = signal(SignalKind::terminate()).unwrap();
         select! {
             _ = signal::ctrl_c() => {

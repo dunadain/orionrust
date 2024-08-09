@@ -5,6 +5,7 @@ use redis::{
     Client,
 };
 use tokio::{select, time::sleep};
+use tracing::info;
 
 /// connection manager will reconnect to redis if the connection is lost
 pub async fn connect(url: String) -> ConnectionManager {
@@ -19,6 +20,7 @@ pub async fn connect(url: String) -> ConnectionManager {
         con_result = client.get_connection_manager_with_config(config) => {
             match con_result {
                 Ok(con) => {
+                    info!("Connected to redis");
                     return con;
                 },
                 Err(e) => panic!("Failed to connect to redis: {}", e),
