@@ -49,7 +49,7 @@ fn listen_for_data(
                 result = reader.read_buf(&mut buffer) => {
                     match result {
                         Ok(n) if n != 0 => {
-                            pkg_extractor.extract(&buffer, n, 0).await;
+                            pkg_extractor.process(&buffer, n, 0).await;
                         }
                         other => {
                             if let Err(e) = other {
@@ -103,7 +103,23 @@ impl<F: SocketListener> PackageExtractor<F> {
         }
     }
 
-    async fn extract(&mut self, bytes: &BytesMut, len: usize, mut bytes_offset: usize) {
+    async fn process(&mut self, bytes: &BytesMut, len: usize, bytes_offset: usize) {
+        let mut pkgs = vec![];
+        self.extract(bytes, len, bytes_offset, &mut pkgs);
+        for pkg in pkgs {
+            self.event_listener
+                .onmessage(self.socket_handle.clone(), pkg)
+                .await;
+        }
+    }
+
+    fn extract(
+        &mut self,
+        bytes: &BytesMut,
+        len: usize,
+        mut bytes_offset: usize,
+        result_pkgs: &mut Vec<Bytes>,
+    ) {
         let target_size = match self.state {
             ReadState::ReadingHeader => HEADER_SIZE,
             ReadState::ReadingBody => self.pkg_buffer.len(),
@@ -125,9 +141,7 @@ impl<F: SocketListener> PackageExtractor<F> {
                     self.state = ReadState::ReadingBody;
                 }
                 ReadState::ReadingBody => {
-                    self.event_listener
-                        .onmessage(self.socket_handle.clone(), self.pkg_buffer.clone().freeze())
-                        .await;
+                    result_pkgs.push(self.pkg_buffer.clone().freeze());
                     self.pkg_buffer.clear();
                     self.pkg_buffer_offset = 0;
                     self.state = ReadState::ReadingHeader;
@@ -135,7 +149,7 @@ impl<F: SocketListener> PackageExtractor<F> {
             }
         }
         if bytes_offset < len {
-            self.extract(bytes, len, bytes_offset).await;
+            self.extract(bytes, len, bytes_offset, result_pkgs);
         }
     }
 }

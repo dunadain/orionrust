@@ -76,10 +76,10 @@ where
 }
 
 pub trait NetClient: Send + Sync {
-    async fn onopen(self: Arc<Self>);
-    async fn receive_msg(self: Arc<Self>, msg: Bytes);
-    async fn onclose(self: Arc<Self>);
-    async fn close(self: Arc<Self>);
+    fn onopen(self: Arc<Self>) -> impl std::future::Future<Output = ()> + Send;
+    fn receive_msg(self: Arc<Self>, msg: Bytes) -> impl std::future::Future<Output = ()> + Send;
+    fn onclose(self: Arc<Self>) -> impl std::future::Future<Output = ()> + Send;
+    fn close(self: Arc<Self>) -> impl std::future::Future<Output = ()> + Send;
 }
 
 #[cfg(test)]
