@@ -63,9 +63,7 @@ impl NetClient for Client {
         }
     }
 
-    async fn onopen(self: Arc<Self>) {
-        todo!()
-    }
+    async fn onopen(self: Arc<Self>) {}
 
     async fn onclose(self: Arc<Self>) {
         // TODO: 把此用户相关的数据从缓冲或者其他服务器清理

@@ -30,7 +30,7 @@ async fn main() {
 
     let addr = env::var("ADDR").unwrap_or_else(|_| "127.0.0.1".to_string());
     let port: u32 = env::var("PORT")
-        .unwrap_or_else(|_| "8001".to_string())
+        .unwrap_or_else(|_| "9001".to_string())
         .parse()
         .unwrap();
     transport::tcp_transport::start(addr, port);
