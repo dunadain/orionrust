@@ -9,16 +9,17 @@ use tokio::{
     select,
 };
 use tokio_util::sync::CancellationToken;
-use tracing::error;
+use tracing::{error, info};
 
 pub async fn serve_tcp(
     addr: String,
     port: u32,
     event_listener: impl SocketListener + Clone + Send + Sync + 'static,
 ) {
-    let listener = TcpListener::bind(addr + ":" + &port.to_string())
+    let listener = TcpListener::bind(addr.clone() + ":" + &port.to_string())
         .await
         .expect("should bind to address");
+    info!("Listening on: {}", addr + ":" + &port.to_string());
     loop {
         let result = listener.accept().await;
         match result {
