@@ -65,7 +65,7 @@ fn listen_for_data(
                 }
             }
         }
-        event_listener.onclose(socket_handle);
+        event_listener.onclose(socket_handle).await;
     });
 }
 
@@ -76,7 +76,10 @@ pub trait SocketListener {
         socket_handle: SocketHandle,
         msg: Bytes,
     ) -> impl std::future::Future<Output = ()> + Send;
-    fn onclose(&mut self, socket_handle: SocketHandle);
+    fn onclose(
+        &mut self,
+        socket_handle: SocketHandle,
+    ) -> impl std::future::Future<Output = ()> + Send;
 }
 
 enum ReadState {

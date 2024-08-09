@@ -43,15 +43,12 @@ impl SocketListener for TcpEventListener {
         }
     }
 
-    fn onclose(&mut self, socket_handle: orion::SocketHandle) {
-        let cmgr = self.client_mgr.clone();
-        tokio::spawn(async move {
-            let id = socket_handle.id();
-            let result = cmgr.get_client(id);
-            if let Some(client) = result {
-                client.onclose().await;
-                cmgr.remove_client(id);
-            }
-        });
+    async fn onclose(&mut self, socket_handle: orion::SocketHandle) {
+        let id = socket_handle.id();
+        let result = self.client_mgr.get_client(id);
+        if let Some(client) = result {
+            client.onclose().await;
+            self.client_mgr.remove_client(id);
+        }
     }
 }
