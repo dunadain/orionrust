@@ -5,7 +5,7 @@ use std::{
 };
 
 use bytes::{BufMut, Bytes, BytesMut};
-use orion::SocketHandle;
+use orion::TcpSocketHandle;
 use tokio::{select, sync::mpsc, time::sleep};
 use tokio_util::sync::CancellationToken;
 use tracing::error;
@@ -25,7 +25,7 @@ const HEARTBEAT_INTERVAL: u8 = 20;
 
 #[derive(Debug, Clone)]
 pub struct Client {
-    socket: SocketHandle,
+    socket: TcpSocketHandle,
     state: Arc<AtomicU8>,
     heartbeat_recved: mpsc::Sender<()>,
     dead: CancellationToken,
@@ -100,7 +100,7 @@ impl NetClient for Client {
 }
 
 impl Client {
-    pub fn new(socket: SocketHandle) -> Self {
+    pub fn new(socket: TcpSocketHandle) -> Self {
         let (tx, mut rx) = mpsc::channel(1);
 
         let s = socket.clone();

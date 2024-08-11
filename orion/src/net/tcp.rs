@@ -1,7 +1,7 @@
 pub mod tcp_actors;
 
 use bytes::{Bytes, BytesMut};
-use tcp_actors::SocketHandle;
+use tcp_actors::TcpSocketHandle;
 
 use tokio::{
     io::AsyncReadExt,
@@ -39,7 +39,7 @@ fn listen_for_data(
 ) {
     let (mut reader, writer) = socket.into_split();
     let token = CancellationToken::new();
-    let socket_handle = SocketHandle::new(writer, token.clone());
+    let socket_handle = TcpSocketHandle::new(writer, token.clone());
     event_listener.onopen(socket_handle.clone());
     tokio::spawn(async move {
         let mut buffer = BytesMut::with_capacity(1024);
@@ -70,15 +70,15 @@ fn listen_for_data(
 }
 
 pub trait SocketListener {
-    fn onopen(&mut self, socket_handle: SocketHandle);
+    fn onopen(&mut self, socket_handle: TcpSocketHandle);
     fn onmessage(
         &self,
-        socket_handle: SocketHandle,
+        socket_handle: TcpSocketHandle,
         msg: Bytes,
     ) -> impl std::future::Future<Output = ()> + Send;
     fn onclose(
         &mut self,
-        socket_handle: SocketHandle,
+        socket_handle: TcpSocketHandle,
     ) -> impl std::future::Future<Output = ()> + Send;
 }
 
@@ -93,11 +93,11 @@ struct PackageExtractor<F: SocketListener> {
     pkg_buffer_offset: usize, // for header and msg
     state: ReadState,
     event_listener: F,
-    socket_handle: SocketHandle,
+    socket_handle: TcpSocketHandle,
 }
 
 impl<F: SocketListener> PackageExtractor<F> {
-    fn new(event_listener: F, socket_handle: SocketHandle) -> Self {
+    fn new(event_listener: F, socket_handle: TcpSocketHandle) -> Self {
         Self {
             pkg_buffer: BytesMut::with_capacity(HEADER_SIZE),
             pkg_buffer_offset: 0,

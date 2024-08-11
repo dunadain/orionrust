@@ -44,12 +44,12 @@ impl TcpWriteActor {
 }
 
 #[derive(Clone, Debug)]
-pub struct SocketHandle {
+pub struct TcpSocketHandle {
     id: u32,
     sender: mpsc::Sender<Message>,
 }
 
-impl SocketHandle {
+impl TcpSocketHandle {
     pub fn new(writer: OwnedWriteHalf, cancel_token: CancellationToken) -> Self {
         let (sender, receiver) = mpsc::channel(20);
         let buf_writer = BufWriter::new(writer);
@@ -65,7 +65,7 @@ impl SocketHandle {
         if id == u32::MAX {
             ENUMERATOR.store(0, Ordering::SeqCst);
         }
-        SocketHandle { sender, id }
+        TcpSocketHandle { sender, id }
     }
 
     pub async fn send(&self, message: Bytes) {
