@@ -1,5 +1,6 @@
 use std::{
-    sync::{atomic::AtomicU8, Arc},
+    collections::HashMap,
+    sync::{atomic::AtomicU8, Arc, Mutex},
     time::Duration,
 };
 
@@ -28,8 +29,11 @@ pub struct Client {
     state: Arc<AtomicU8>,
     heartbeat_recved: mpsc::Sender<()>,
     dead: CancellationToken,
+    /// 记录此客户端所连接的每种类型的有状态服务器
+    server_map: Arc<Mutex<HashMap<u8, String>>>,
 }
 
+// TODO: 从mongodb中加载用户数据到redis（从专门的redis管理服务器加载？）
 impl NetClient for Client {
     async fn receive_msg(self: Arc<Self>, msg: Bytes) {
         let (packet_type, decoded_body) = packet::decode(msg);
@@ -120,6 +124,7 @@ impl Client {
             state: Arc::new(AtomicU8::new(0)),
             heartbeat_recved: tx,
             dead: CancellationToken::new(),
+            server_map: Arc::new(Mutex::new(HashMap::new())),
         }
     }
 }
