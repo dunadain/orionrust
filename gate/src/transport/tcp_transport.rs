@@ -1,4 +1,4 @@
-use crate::{client::NetClient, global};
+use crate::client::NetClient;
 
 use bytes::Bytes;
 use orion::{SocketHandle, SocketListener, TcpSocketHandle};
@@ -12,7 +12,7 @@ pub fn start(addr: String, port: u32) {
             addr,
             port,
             TcpEventListener {
-                client_mgr: global::client_manager_copy(),
+                client_mgr: ClientManager::new(),
             },
         )
         .await;
@@ -35,7 +35,7 @@ impl SocketListener for TcpEventListener {
         let client = self.client_mgr.get_client(socket_handle.id());
         match client {
             Some(inner) => {
-                inner.receive_msg(pkg).await;
+                inner.receive_msg(pkg, self.client_mgr.clone()).await;
             }
             None => {
                 error!("Failed to find client for socket {}", socket_handle.id());

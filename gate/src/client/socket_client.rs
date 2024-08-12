@@ -10,12 +10,9 @@ use tokio::{select, sync::mpsc, time::sleep};
 use tokio_util::sync::CancellationToken;
 use tracing::error;
 
-use crate::{
-    global,
-    protocol::{message, packet},
-};
+use crate::protocol::{message, packet};
 
-use super::NetClient;
+use super::{ClientManager, NetClient};
 
 const WAIT_FOR_HANDSHAKE: u8 = 0;
 const WAIT_FOR_HANDSHAKE_ACK: u8 = 1;
@@ -23,7 +20,7 @@ const READY: u8 = 2;
 
 const HEARTBEAT_INTERVAL: u8 = 20;
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Client<T: SocketHandle + Sync + Send + Clone + 'static> {
     socket: T,
     state: Arc<AtomicU8>,
@@ -35,7 +32,8 @@ pub struct Client<T: SocketHandle + Sync + Send + Clone + 'static> {
 
 // TODO: 从mongodb中加载用户数据到redis（从专门的redis管理服务器加载？）
 impl<T: SocketHandle + Sync + Send + Clone + 'static> NetClient for Client<T> {
-    async fn receive_msg(self: Arc<Self>, msg: Bytes) {
+    type ClientMgrType = ClientManager<Client<T>>;
+    async fn receive_msg(self: Arc<Self>, msg: Bytes, mgr: ClientManager<Client<T>>) {
         let (packet_type, decoded_body) = packet::decode(msg);
         match packet_type {
             packet::PacketType::Handshake => {
@@ -48,7 +46,7 @@ impl<T: SocketHandle + Sync + Send + Clone + 'static> NetClient for Client<T> {
                 match uid {
                     Ok(uid) => {
                         // TODO: 剔除重复登录用户
-                        global::client_manager_copy().bind_connection(uid, self.socket.id());
+                        mgr.bind_connection(uid, self.socket.id());
                     }
                     Err(e) => {
                         error!("Failed to parse uid: {}", e);
