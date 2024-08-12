@@ -1,3 +1,4 @@
-mod client;
+pub mod client;
+pub mod global;
 mod protocol;
-mod transport;
+pub mod transport;
