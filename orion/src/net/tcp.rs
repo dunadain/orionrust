@@ -1,7 +1,7 @@
 pub mod tcp_actors;
 
 use bytes::{Bytes, BytesMut};
-use tcp_actors::TcpSocketHandle;
+pub use tcp_actors::TcpSocketHandle;
 
 use tokio::{
     io::AsyncReadExt,

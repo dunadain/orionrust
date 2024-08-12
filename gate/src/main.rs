@@ -4,7 +4,7 @@ use gate::{
     client::{socket_client::Client, ClientManager},
     global, transport,
 };
-use orion::{app, async_redis};
+use orion::{app, async_redis, TcpSocketHandle};
 
 #[orion::init_tracing]
 #[tokio::main]
@@ -25,7 +25,7 @@ async fn main() {
     let redis = async_redis::connect(redis_url).await;
     global::set_nats(nats);
     global::set_redis(redis);
-    let clientmgr: ClientManager<Client> = ClientManager::new();
+    let clientmgr: ClientManager<Client<TcpSocketHandle>> = ClientManager::new();
     global::set_client_manager(clientmgr);
 
     let addr = env::var("ADDR").unwrap_or_else(|_| "127.0.0.1".to_string());

@@ -5,7 +5,7 @@ use std::{
 };
 
 use bytes::{BufMut, Bytes, BytesMut};
-use orion::TcpSocketHandle;
+use orion::SocketHandle;
 use tokio::{select, sync::mpsc, time::sleep};
 use tokio_util::sync::CancellationToken;
 use tracing::error;
@@ -24,8 +24,8 @@ const READY: u8 = 2;
 const HEARTBEAT_INTERVAL: u8 = 20;
 
 #[derive(Debug, Clone)]
-pub struct Client {
-    socket: TcpSocketHandle,
+pub struct Client<T: SocketHandle + Sync + Send + Clone + 'static> {
+    socket: T,
     state: Arc<AtomicU8>,
     heartbeat_recved: mpsc::Sender<()>,
     dead: CancellationToken,
@@ -34,7 +34,7 @@ pub struct Client {
 }
 
 // TODO: 从mongodb中加载用户数据到redis（从专门的redis管理服务器加载？）
-impl NetClient for Client {
+impl<T: SocketHandle + Sync + Send + Clone + 'static> NetClient for Client<T> {
     async fn receive_msg(self: Arc<Self>, msg: Bytes) {
         let (packet_type, decoded_body) = packet::decode(msg);
         match packet_type {
@@ -99,8 +99,8 @@ impl NetClient for Client {
     }
 }
 
-impl Client {
-    pub fn new(socket: TcpSocketHandle) -> Self {
+impl<T: SocketHandle + Sync + Send + Clone + 'static> Client<T> {
+    pub fn new(socket: T) -> Self {
         let (tx, mut rx) = mpsc::channel(1);
 
         let s = socket.clone();

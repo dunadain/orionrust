@@ -9,6 +9,8 @@ use tokio::{
 use tokio_util::sync::CancellationToken;
 use tracing::error;
 
+use crate::net::socket_handle::SocketHandle;
+
 enum Message {
     Send(Bytes),
     Close,
@@ -67,23 +69,24 @@ impl TcpSocketHandle {
         }
         TcpSocketHandle { sender, id }
     }
+}
 
-    pub async fn send(&self, message: Bytes) {
+impl SocketHandle for TcpSocketHandle {
+    fn id(&self) -> u32 {
+        self.id
+    }
+    async fn send(&self, message: Bytes) {
         let result = self.sender.send(Message::Send(message)).await;
         if let Err(e) = result {
             error!("Failed to send message; error = {:?}", e);
         }
     }
 
-    pub async fn close(&self) {
+    async fn close(&self) {
         let result = self.sender.send(Message::Close).await;
         if let Err(e) = result {
             error!("Failed to send close message; error = {:?}", e);
         }
-    }
-
-    pub fn id(&self) -> u32 {
-        self.id
     }
 }
 

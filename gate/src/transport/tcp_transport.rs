@@ -1,7 +1,7 @@
 use crate::{client::NetClient, global};
 
 use bytes::Bytes;
-use orion::SocketListener;
+use orion::{SocketHandle, SocketListener, TcpSocketHandle};
 
 use crate::client::{socket_client::Client, ClientManager};
 use tracing::error;
@@ -21,7 +21,7 @@ pub fn start(addr: String, port: u32) {
 
 #[derive(Clone)]
 struct TcpEventListener {
-    client_mgr: ClientManager<Client>,
+    client_mgr: ClientManager<Client<TcpSocketHandle>>,
 }
 
 impl SocketListener for TcpEventListener {
