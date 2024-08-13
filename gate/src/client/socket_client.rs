@@ -131,8 +131,6 @@ impl<T: SocketHandle + Sync + Send + Clone + 'static> Client<T> {
 mod tests {
     use std::sync::atomic::AtomicBool;
 
-    use crate::client;
-
     use super::*;
 
     #[derive(Clone)]
