@@ -8,6 +8,19 @@ use std::{
 use bytes::Bytes;
 use tracing::error;
 
+pub trait NetClient: Send + Sync {
+    type ClientMgrType;
+
+    fn onopen(self: &Arc<Self>) -> impl std::future::Future<Output = ()> + Send;
+    fn receive_msg(
+        self: &Arc<Self>,
+        msg: Bytes,
+        mgr: Self::ClientMgrType,
+    ) -> impl std::future::Future<Output = ()> + Send;
+    fn onclose(self: &Arc<Self>) -> impl std::future::Future<Output = ()> + Send;
+    fn close(self: &Arc<Self>) -> impl std::future::Future<Output = ()> + Send;
+}
+
 #[derive(Clone)]
 pub struct ClientManager<T: NetClient> {
     client_map: Arc<Mutex<hash_map::HashMap<u32, Arc<T>>>>,
@@ -73,19 +86,6 @@ where
             None
         }
     }
-}
-
-pub trait NetClient: Send + Sync {
-    type ClientMgrType;
-
-    fn onopen(self: &Arc<Self>) -> impl std::future::Future<Output = ()> + Send;
-    fn receive_msg(
-        self: &Arc<Self>,
-        msg: Bytes,
-        mgr: Self::ClientMgrType,
-    ) -> impl std::future::Future<Output = ()> + Send;
-    fn onclose(self: &Arc<Self>) -> impl std::future::Future<Output = ()> + Send;
-    fn close(self: &Arc<Self>) -> impl std::future::Future<Output = ()> + Send;
 }
 
 #[cfg(test)]
