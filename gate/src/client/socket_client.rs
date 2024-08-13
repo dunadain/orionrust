@@ -33,7 +33,7 @@ pub struct Client<T: SocketHandle + Sync + Send + Clone + 'static> {
 // TODO: 从mongodb中加载用户数据到redis（从专门的redis管理服务器加载？）
 impl<T: SocketHandle + Sync + Send + Clone + 'static> NetClient for Client<T> {
     type ClientMgrType = ClientManager<Client<T>>;
-    async fn receive_msg(self: Arc<Self>, msg: Bytes, mgr: ClientManager<Client<T>>) {
+    async fn receive_msg(self: &Arc<Self>, msg: Bytes, mgr: ClientManager<Client<T>>) {
         let (packet_type, decoded_body) = packet::decode(msg);
         match packet_type {
             packet::PacketType::Handshake => {
@@ -83,14 +83,14 @@ impl<T: SocketHandle + Sync + Send + Clone + 'static> NetClient for Client<T> {
         }
     }
 
-    async fn onopen(self: Arc<Self>) {}
+    async fn onopen(self: &Arc<Self>) {}
 
-    async fn onclose(self: Arc<Self>) {
+    async fn onclose(self: &Arc<Self>) {
         // TODO: 把此用户相关的数据从缓冲或者其他服务器清理
         self.dead.cancel();
     }
 
-    async fn close(self: Arc<Self>) {
+    async fn close(self: &Arc<Self>) {
         self.socket.close().await;
         let token = self.dead.clone();
         token.cancelled().await;
@@ -125,4 +125,91 @@ impl<T: SocketHandle + Sync + Send + Clone + 'static> Client<T> {
             server_map: Arc::new(Mutex::new(HashMap::new())),
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[derive(Clone)]
+    struct MockSocketHandle {
+        id: u32,
+    }
+
+    impl SocketHandle for MockSocketHandle {
+        fn id(&self) -> u32 {
+            self.id
+        }
+
+        async fn send(&self, _message: Bytes) {}
+
+        async fn close(&self) {}
+    }
+
+    #[tokio::test]
+    async fn test_receive_handshake() {
+        let client = Arc::new(Client::new(MockSocketHandle { id: 1 }));
+        let mgr = ClientManager::new();
+        let mut msg = BytesMut::new();
+        let uid = b"myuuid";
+        msg.put_u8(uid.len() as u8);
+        msg.put_slice(uid);
+        let packet = packet::encode(packet::PacketType::Handshake, msg.freeze());
+        // let msg = Bytes::from_static(&[0x00, 0x01, 0x02, 0x03]); // Example handshake message
+        client.receive_msg(packet, mgr).await;
+        assert_eq!(
+            client.state.load(std::sync::atomic::Ordering::SeqCst),
+            WAIT_FOR_HANDSHAKE_ACK
+        );
+        // Assert other expectations for the handshake
+    }
+
+    // #[tokio::test]
+    // async fn test_receive_handshake_ack() {
+    //     let client = Arc::new(Client::new(MockSocketHandle::new()));
+    //     let mgr = ClientManager::new();
+    //     let msg = Bytes::from_static(&[0x00, 0x01, 0x02, 0x03]); // Example handshake ack message
+    //     client.state.store(WAIT_FOR_HANDSHAKE_ACK, Ordering::SeqCst);
+    //     client.receive_msg(msg, mgr.clone()).await;
+    //     assert_eq!(client.state.load(Ordering::SeqCst), READY);
+    //     // Assert other expectations for the handshake ack
+    // }
+
+    // #[tokio::test]
+    // async fn test_receive_heartbeat() {
+    //     let client = Arc::new(Client::new(MockSocketHandle::new()));
+    //     let mgr = ClientManager::new();
+    //     let msg = Bytes::from_static(&[0x00, 0x01, 0x02, 0x03]); // Example heartbeat message
+    //     client.state.store(READY, Ordering::SeqCst);
+    //     client.receive_msg(msg, mgr.clone()).await;
+    //     // Assert expectations for the heartbeat
+    // }
+
+    // #[tokio::test]
+    // async fn test_receive_data() {
+    //     let client = Arc::new(Client::new(MockSocketHandle::new()));
+    //     let mgr = ClientManager::new();
+    //     let msg = Bytes::from_static(&[0x00, 0x01, 0x02, 0x03]); // Example data message
+    //     client.state.store(READY, Ordering::SeqCst);
+    //     client.receive_msg(msg, mgr.clone()).await;
+    //     // Assert expectations for the data message
+    // }
+
+    // #[tokio::test]
+    // async fn test_receive_kick() {
+    //     let client = Arc::new(Client::new(MockSocketHandle::new()));
+    //     let mgr = ClientManager::new();
+    //     let msg = Bytes::from_static(&[0x00, 0x01, 0x02, 0x03]); // Example kick message
+    //     client.receive_msg(msg, mgr.clone()).await;
+    //     // Assert expectations for the kick message
+    // }
+
+    // #[tokio::test]
+    // async fn test_receive_error() {
+    //     let client = Arc::new(Client::new(MockSocketHandle::new()));
+    //     let mgr = ClientManager::new();
+    //     let msg = Bytes::from_static(&[0x00, 0x01, 0x02, 0x03]); // Example error message
+    //     client.receive_msg(msg, mgr.clone()).await;
+    //     // Assert expectations for the error message
+    // }
 }

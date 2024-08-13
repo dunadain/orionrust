@@ -78,14 +78,14 @@ where
 pub trait NetClient: Send + Sync {
     type ClientMgrType;
 
-    fn onopen(self: Arc<Self>) -> impl std::future::Future<Output = ()> + Send;
+    fn onopen(self: &Arc<Self>) -> impl std::future::Future<Output = ()> + Send;
     fn receive_msg(
-        self: Arc<Self>,
+        self: &Arc<Self>,
         msg: Bytes,
         mgr: Self::ClientMgrType,
     ) -> impl std::future::Future<Output = ()> + Send;
-    fn onclose(self: Arc<Self>) -> impl std::future::Future<Output = ()> + Send;
-    fn close(self: Arc<Self>) -> impl std::future::Future<Output = ()> + Send;
+    fn onclose(self: &Arc<Self>) -> impl std::future::Future<Output = ()> + Send;
+    fn close(self: &Arc<Self>) -> impl std::future::Future<Output = ()> + Send;
 }
 
 #[cfg(test)]
@@ -190,19 +190,19 @@ mod tests {
 
     impl NetClient for MockClient {
         type ClientMgrType = ClientManager<MockClient>;
-        async fn receive_msg(self: Arc<Self>, msg: Bytes, mgr: Self::ClientMgrType) {
+        async fn receive_msg(self: &Arc<Self>, msg: Bytes, mgr: Self::ClientMgrType) {
             // Mock implementation
         }
 
-        async fn onopen(self: Arc<Self>) {
+        async fn onopen(self: &Arc<Self>) {
             todo!()
         }
 
-        async fn onclose(self: Arc<Self>) {
+        async fn onclose(self: &Arc<Self>) {
             todo!()
         }
 
-        async fn close(self: Arc<Self>) {
+        async fn close(self: &Arc<Self>) {
             todo!()
         }
     }
