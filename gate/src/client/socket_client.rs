@@ -129,11 +129,16 @@ impl<T: SocketHandle + Sync + Send + Clone + 'static> Client<T> {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::atomic::AtomicBool;
+
+    use crate::client;
+
     use super::*;
 
     #[derive(Clone)]
     struct MockSocketHandle {
         id: u32,
+        close_called: Arc<AtomicBool>,
     }
 
     impl SocketHandle for MockSocketHandle {
@@ -143,46 +148,77 @@ mod tests {
 
         async fn send(&self, _message: Bytes) {}
 
-        async fn close(&self) {}
+        async fn close(&self) {
+            self.close_called
+                .store(true, std::sync::atomic::Ordering::SeqCst);
+        }
     }
 
     #[tokio::test]
     async fn test_receive_handshake() {
-        let client = Arc::new(Client::new(MockSocketHandle { id: 1 }));
-        let mgr = ClientManager::new();
+        let socket_id = 53;
+        let client = Client::new(MockSocketHandle {
+            id: socket_id,
+            close_called: Arc::new(AtomicBool::new(false)),
+        });
+        let mut mgr = ClientManager::new();
+        mgr.add_client(socket_id, client);
         let mut msg = BytesMut::new();
         let uid = b"myuuid";
         msg.put_u8(uid.len() as u8);
         msg.put_slice(uid);
         let packet = packet::encode(packet::PacketType::Handshake, msg.freeze());
-        // let msg = Bytes::from_static(&[0x00, 0x01, 0x02, 0x03]); // Example handshake message
-        client.receive_msg(packet, mgr).await;
+        let client = mgr.get_client(socket_id).unwrap();
+        client.receive_msg(packet, mgr.clone()).await;
         assert_eq!(
             client.state.load(std::sync::atomic::Ordering::SeqCst),
             WAIT_FOR_HANDSHAKE_ACK
         );
-        // Assert other expectations for the handshake
+
+        assert!(mgr.get_client_by_uid("myuuid").unwrap().socket.id() == socket_id);
+    }
+
+    #[tokio::test]
+    async fn test_receive_handshake_ack() {
+        let socket_id = 1238475;
+        let client = Client::new(MockSocketHandle {
+            id: socket_id,
+            close_called: Arc::new(AtomicBool::new(false)),
+        });
+        let mut mgr = ClientManager::new();
+        mgr.add_client(socket_id, client);
+        let msg = packet::encode(packet::PacketType::HandshakeAck, Bytes::new()); // Example handshake ack message
+        let client = mgr.get_client(socket_id).unwrap();
+        client
+            .state
+            .store(WAIT_FOR_HANDSHAKE_ACK, std::sync::atomic::Ordering::SeqCst);
+        client.receive_msg(msg, mgr.clone()).await;
+        assert_eq!(
+            client.state.load(std::sync::atomic::Ordering::SeqCst),
+            READY
+        );
     }
 
     // #[tokio::test]
-    // async fn test_receive_handshake_ack() {
-    //     let client = Arc::new(Client::new(MockSocketHandle::new()));
-    //     let mgr = ClientManager::new();
-    //     let msg = Bytes::from_static(&[0x00, 0x01, 0x02, 0x03]); // Example handshake ack message
-    //     client.state.store(WAIT_FOR_HANDSHAKE_ACK, Ordering::SeqCst);
-    //     client.receive_msg(msg, mgr.clone()).await;
-    //     assert_eq!(client.state.load(Ordering::SeqCst), READY);
-    //     // Assert other expectations for the handshake ack
-    // }
-
-    // #[tokio::test]
     // async fn test_receive_heartbeat() {
-    //     let client = Arc::new(Client::new(MockSocketHandle::new()));
-    //     let mgr = ClientManager::new();
-    //     let msg = Bytes::from_static(&[0x00, 0x01, 0x02, 0x03]); // Example heartbeat message
-    //     client.state.store(READY, Ordering::SeqCst);
+    //     let socket_id = 1238475;
+    //     let client = Client::new(MockSocketHandle {
+    //         id: socket_id,
+    //         close_called: Arc::new(AtomicBool::new(false)),
+    //     });
+    //     let mut mgr = ClientManager::new();
+    //     mgr.add_client(socket_id, client);
+    //     let msg = packet::encode(packet::PacketType::Heartbeat, Bytes::new()); // Example heartbeat message
+    //     let client = mgr.get_client(socket_id).unwrap();
+    //     client
+    //         .state
+    //         .store(READY, std::sync::atomic::Ordering::SeqCst);
     //     client.receive_msg(msg, mgr.clone()).await;
-    //     // Assert expectations for the heartbeat
+    //     sleep(Duration::from_secs(3)).await;
+    //     assert!(client
+    //         .socket
+    //         .close_called
+    //         .load(std::sync::atomic::Ordering::SeqCst));
     // }
 
     // #[tokio::test]
