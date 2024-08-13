@@ -76,7 +76,7 @@ impl<T: SocketHandle + Sync + Send + Clone + 'static> NetClient for Client<T> {
                 if self.state.load(std::sync::atomic::Ordering::SeqCst) != READY {
                     return;
                 }
-                let (msg_type, proto_id, id, data) = message::decode(decoded_body);
+                let (msg_type, proto_id, reqid, data) = message::decode(decoded_body);
             }
             packet::PacketType::Kick => todo!(),
             packet::PacketType::Error => todo!(),
