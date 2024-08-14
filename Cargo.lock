@@ -405,6 +405,7 @@ dependencies = [
 name = "gate"
 version = "0.1.0"
 dependencies = [
+ "async-nats",
  "bytes",
  "futures",
  "orion",

@@ -13,6 +13,7 @@ use tracing::error;
 use crate::{
     config::{protocols, server_config},
     global::nats,
+    natsext::NatRequest,
     protocol::{message, packet},
 };
 
@@ -92,18 +93,16 @@ impl<T: SocketHandle + Sync + Send + Clone + 'static> NetClient for Client<T> {
                     // TODO: add specific server uuid to the subject(eg. handler.servertype.uuid) 要是这个uuid服务器挂了咋办
                 }
                 let uid = self.uid.lock().unwrap().clone();
-                let payload = nats_msg::encode(self.socket.id(), proto_id, uid, app().uuid(), data);
+                let payload =
+                    nats_msg::encode(self.socket.id(), proto_id, reqid, uid, app().uuid(), data);
                 match msg_type {
                     message::MsgType::Request => {
-                        let result = nats().try_request(subject, payload).await;
-                        match result {
-                            Ok(msg) => {
-                                let (_, proto_id, _, _, data) = nats_msg::decode(msg.payload);
-                                self.sendmsg(msg_type, proto_id, data, reqid).await;
-                            }
-                            Err(e) => {
-                                error!("{}", e);
-                            }
+                        let mut reply = app().uuid().to_string();
+                        reply.push_str(".reply.");
+                        reply.push_str(&reqid.to_string());
+                        let result = nats().try_request(subject, reply, payload).await;
+                        if let Err(e) = result {
+                            error!("{:?}", e);
                         }
                     }
                     message::MsgType::Notify => {

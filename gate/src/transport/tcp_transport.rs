@@ -1,21 +1,12 @@
-use crate::client::NetClient;
-
 use bytes::Bytes;
 use orion::{SocketHandle, SocketListener, TcpSocketHandle};
 
-use crate::client::{socket_client::Client, ClientManager};
+use crate::client::{socket_client::Client, ClientManager, NetClient};
 use tracing::error;
 
-pub fn start(addr: String, port: u32) {
+pub fn start(addr: String, port: u32, client_mgr: ClientManager<Client<TcpSocketHandle>>) {
     tokio::spawn(async move {
-        orion::serve_tcp(
-            addr,
-            port,
-            TcpEventListener {
-                client_mgr: ClientManager::new(),
-            },
-        )
-        .await;
+        orion::serve_tcp(addr, port, TcpEventListener { client_mgr }).await;
     });
 }
 
