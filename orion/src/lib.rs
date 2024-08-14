@@ -2,12 +2,14 @@ mod app;
 pub use app::app;
 
 mod net;
-pub use net::nats_client;
-pub use net::nats_msg;
 pub use net::socket_handle::SocketHandle;
 pub use net::tcp::serve_tcp;
 pub use net::tcp::tcp_actors::TcpSocketHandle;
 pub use net::tcp::SocketListener;
+
+mod nats;
+pub use nats::nats_client;
+pub use nats::nats_msg;
 
 pub mod async_redis;
 
