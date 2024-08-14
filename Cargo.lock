@@ -406,6 +406,7 @@ name = "gate"
 version = "0.1.0"
 dependencies = [
  "bytes",
+ "futures",
  "orion",
  "redis 0.26.0",
  "redis-macros",

@@ -10,7 +10,7 @@ pub enum MsgType {
 const MSG_TYPE_LEN: usize = 1;
 const MSG_PROTOCOL_ID_LEN: usize = 2;
 
-pub fn encode(msg_type: MsgType, protocol_id: u16, id: u8, data: Bytes) -> bytes::Bytes {
+pub fn encode(msg_type: MsgType, proto_id: u16, reqid: u8, data: Bytes) -> bytes::Bytes {
     let id_len = match msg_type {
         MsgType::Request | MsgType::Response => 1,
         _ => 0,
@@ -25,10 +25,10 @@ pub fn encode(msg_type: MsgType, protocol_id: u16, id: u8, data: Bytes) -> bytes
     let mut buf = BytesMut::with_capacity(msg_len);
     buf.put_u8(msg_type as u8);
     if id_len > 0 {
-        buf.put_u8(id);
+        buf.put_u8(reqid);
     }
     if proto_len > 0 {
-        buf.put_u16(protocol_id);
+        buf.put_u16(proto_id);
     }
     buf.extend_from_slice(&data);
     buf.freeze()
@@ -36,7 +36,7 @@ pub fn encode(msg_type: MsgType, protocol_id: u16, id: u8, data: Bytes) -> bytes
 
 pub fn decode(mut bytes: Bytes) -> (MsgType, u16, u8, Bytes) {
     let msg_type = bytes.get_u8();
-    let id = match get_msg_type(msg_type) {
+    let reqid = match get_msg_type(msg_type) {
         MsgType::Request | MsgType::Response => bytes.get_u8(),
         _ => 0,
     };
@@ -45,7 +45,7 @@ pub fn decode(mut bytes: Bytes) -> (MsgType, u16, u8, Bytes) {
         _ => 0,
     };
 
-    (get_msg_type(msg_type), protocol_id, id, bytes)
+    (get_msg_type(msg_type), protocol_id, reqid, bytes)
 }
 
 fn get_msg_type(msg_type: u8) -> MsgType {

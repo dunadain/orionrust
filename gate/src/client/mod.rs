@@ -8,6 +8,8 @@ use std::{
 use bytes::Bytes;
 use tracing::error;
 
+use crate::protocol::message::MsgType;
+
 pub trait NetClient: Send + Sync {
     type ClientMgrType;
 
@@ -19,6 +21,14 @@ pub trait NetClient: Send + Sync {
     ) -> impl std::future::Future<Output = ()> + Send;
     fn onclose(self: &Arc<Self>) -> impl std::future::Future<Output = ()> + Send;
     fn close(self: &Arc<Self>) -> impl std::future::Future<Output = ()> + Send;
+    fn kick(self: &Arc<Self>) -> impl std::future::Future<Output = ()> + Send;
+    fn sendmsg(
+        self: &Arc<Self>,
+        msg_type: MsgType,
+        proto_id: u16,
+        data: Bytes,
+        reqid: u8,
+    ) -> impl std::future::Future<Output = ()> + Send;
 }
 
 #[derive(Clone)]
@@ -203,6 +213,20 @@ mod tests {
         }
 
         async fn close(self: &Arc<Self>) {
+            todo!()
+        }
+
+        async fn kick(self: &Arc<Self>) {
+            todo!()
+        }
+
+        async fn sendmsg(
+            self: &Arc<Self>,
+            msg_type: MsgType,
+            proto_id: u16,
+            data: Bytes,
+            reqid: u8,
+        ) {
             todo!()
         }
     }

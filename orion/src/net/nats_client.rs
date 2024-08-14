@@ -1,8 +1,7 @@
 use std::time::Duration;
 
-use async_nats::{client::PublishErrorKind, Message, RequestErrorKind};
+use async_nats::{Message, RequestErrorKind};
 use bytes::Bytes;
-use futures::StreamExt;
 use tokio::time::sleep;
 use tracing::error;
 
@@ -38,36 +37,30 @@ impl NatsClient {
                 .payload(payload.clone())
                 .timeout(Some(Duration::from_secs(1)));
             let result = self.client.send_request(subject.clone(), req).await;
-            if let Err(e) = result {
-                error!("Failed to request message: {}", e);
-                if let RequestErrorKind::NoResponders = e.kind() {
-                    return Err("No responders");
+            match result {
+                Err(e) => {
+                    error!("Failed to request message: {}", e);
+                    if let RequestErrorKind::NoResponders = e.kind() {
+                        return Err("No responders");
+                    }
+                    sleep(Duration::from_millis(100 * i)).await;
                 }
-                sleep(Duration::from_millis(100 * i)).await;
-            } else {
-                return Ok(result.unwrap());
+                Ok(msg) => {
+                    return Ok(msg);
+                }
             }
         }
         Err("Failed to request message")
     }
 
-    pub async fn subscribe<F>(&self, subject: String, callback: F)
-    where
-        F: Fn(Message) + Send + Sync + 'static,
-    {
-        let mut subscription = self
-            .client
-            .subscribe(subject)
-            .await
-            .expect("Failed to subscribe");
-        tokio::spawn({
-            let client = self.client.clone();
-            async move {
-                while let Some(msg) = subscription.next().await {
-                    callback(msg);
-                }
+    pub async fn subscribe(&self, subject: String) -> async_nats::Subscriber {
+        let result = self.client.subscribe(subject).await;
+        match result {
+            Ok(sub) => sub,
+            Err(e) => {
+                panic!("Failed to subscribe to NATS server: {}", e);
             }
-        });
+        }
     }
 }
 

@@ -5,12 +5,16 @@ use std::{
 };
 
 use bytes::{BufMut, Bytes, BytesMut};
-use orion::SocketHandle;
+use orion::{app, nats_msg, SocketHandle};
 use tokio::{select, sync::mpsc, time::sleep};
 use tokio_util::sync::CancellationToken;
 use tracing::error;
 
-use crate::protocol::{message, packet};
+use crate::{
+    config::{protocols, server_config},
+    global::nats,
+    protocol::{message, packet},
+};
 
 use super::{ClientManager, NetClient};
 
@@ -22,6 +26,7 @@ const HEARTBEAT_INTERVAL: u8 = 20;
 
 #[derive(Clone)]
 pub struct Client<T: SocketHandle + Sync + Send + Clone + 'static> {
+    uid: Arc<Mutex<String>>,
     socket: T,
     state: Arc<AtomicU8>,
     heartbeat_recved: mpsc::Sender<()>,
@@ -46,6 +51,7 @@ impl<T: SocketHandle + Sync + Send + Clone + 'static> NetClient for Client<T> {
                 match uid {
                     Ok(uid) => {
                         // TODO: 剔除重复登录用户
+                        *self.uid.lock().unwrap() = uid.clone();
                         mgr.bind_connection(uid, self.socket.id());
                     }
                     Err(e) => {
@@ -77,9 +83,40 @@ impl<T: SocketHandle + Sync + Send + Clone + 'static> NetClient for Client<T> {
                     return;
                 }
                 let (msg_type, proto_id, reqid, data) = message::decode(decoded_body);
+                let proto_str = &protocols()[proto_id as usize];
+                let index = proto_str.find("-").expect("should have - in the protocol");
+                let server_type = &proto_str[..index];
+                let mut subject = "handler.".to_string();
+                subject.push_str(server_type);
+                if server_config()[server_type]["stateless"] == false {
+                    // TODO: add specific server uuid to the subject(eg. handler.servertype.uuid) 要是这个uuid服务器挂了咋办
+                }
+                let uid = self.uid.lock().unwrap().clone();
+                let payload = nats_msg::encode(self.socket.id(), proto_id, uid, app().uuid(), data);
+                match msg_type {
+                    message::MsgType::Request => {
+                        let result = nats().try_request(subject, payload).await;
+                        match result {
+                            Ok(msg) => {
+                                let (_, proto_id, _, _, data) = nats_msg::decode(msg.payload);
+                                self.sendmsg(msg_type, proto_id, data, reqid).await;
+                            }
+                            Err(e) => {
+                                error!("{}", e);
+                            }
+                        }
+                    }
+                    message::MsgType::Notify => {
+                        let result = nats().publish(subject, payload).await;
+                        if let Err(e) = result {
+                            error!("{}", e);
+                        }
+                    }
+                    _ => {}
+                };
             }
-            packet::PacketType::Kick => todo!(),
             packet::PacketType::Error => todo!(),
+            _ => {}
         }
     }
 
@@ -94,6 +131,25 @@ impl<T: SocketHandle + Sync + Send + Clone + 'static> NetClient for Client<T> {
         self.socket.close().await;
         let token = self.dead.clone();
         token.cancelled().await;
+    }
+
+    async fn kick(self: &Arc<Self>) {
+        todo!()
+    }
+
+    async fn sendmsg(
+        self: &Arc<Self>,
+        msg_type: message::MsgType,
+        proto_id: u16,
+        data: Bytes,
+        reqid: u8,
+    ) {
+        if self.state.load(std::sync::atomic::Ordering::SeqCst) != READY {
+            return;
+        }
+        let msgbody = message::encode(msg_type, proto_id, reqid, data);
+        let packet = packet::encode(packet::PacketType::Data, msgbody);
+        self.socket.send(packet).await;
     }
 }
 
@@ -118,6 +174,7 @@ impl<T: SocketHandle + Sync + Send + Clone + 'static> Client<T> {
             }
         });
         Client {
+            uid: Arc::new(Mutex::new(String::new())),
             socket,
             state: Arc::new(AtomicU8::new(0)),
             heartbeat_recved: tx,

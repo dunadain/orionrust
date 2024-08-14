@@ -1,5 +1,5 @@
 {
-    "game":{
-        "stateless":false
+    "game": {
+        "stateless": true
     }
 }
