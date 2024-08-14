@@ -1,8 +1,9 @@
 use std::time::Duration;
 
-use async_nats::{Message, RequestErrorKind};
+use async_nats::{client::PublishErrorKind, Message, RequestErrorKind};
 use bytes::Bytes;
 use futures::StreamExt;
+use tokio::time::sleep;
 use tracing::error;
 
 #[derive(Clone, Debug)]
@@ -11,11 +12,20 @@ pub struct NatsClient {
 }
 
 impl NatsClient {
-    pub async fn publish(&self, subject: String, payload: Bytes) {
-        let result = self.client.publish(subject, payload).await;
-        if let Err(e) = result {
-            error!("Failed to publish message: {}", e);
+    pub async fn publish(&self, subject: String, payload: Bytes) -> Result<(), &'static str> {
+        for i in 1..4 {
+            let result = self.client.publish(subject.clone(), payload.clone()).await;
+            match result {
+                Err(e) => {
+                    error!("Failed to publish message: {}", e);
+                    sleep(Duration::from_millis(100 * i)).await;
+                }
+                _ => {
+                    return Ok(());
+                }
+            }
         }
+        Err("Failed to publish message")
     }
 
     pub async fn try_request(
@@ -23,7 +33,7 @@ impl NatsClient {
         subject: String,
         payload: Bytes,
     ) -> Result<Message, &'static str> {
-        for _ in 0..3 {
+        for i in 1..4 {
             let req = async_nats::Request::new()
                 .payload(payload.clone())
                 .timeout(Some(Duration::from_secs(1)));
@@ -33,6 +43,7 @@ impl NatsClient {
                 if let RequestErrorKind::NoResponders = e.kind() {
                     return Err("No responders");
                 }
+                sleep(Duration::from_millis(100 * i)).await;
             } else {
                 return Ok(result.unwrap());
             }
