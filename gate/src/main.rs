@@ -1,7 +1,6 @@
 use std::env;
 
-use async_nats::client;
-use gate::{global, natsext, s2clistener, transport, ClientManager};
+use gate::{global, s2clistener, transport, ClientManager};
 use orion::{app, async_redis};
 
 #[orion::init_tracing]
