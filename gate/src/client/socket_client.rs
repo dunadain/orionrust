@@ -23,7 +23,7 @@ const WAIT_FOR_HANDSHAKE: u8 = 0;
 const WAIT_FOR_HANDSHAKE_ACK: u8 = 1;
 const READY: u8 = 2;
 
-const HEARTBEAT_INTERVAL: u8 = 20;
+const HEARTBEAT_INTERVAL: u8 = 30;
 
 #[derive(Clone)]
 pub struct Client<T: SocketHandle + Sync + Send + Clone + 'static> {
