@@ -31,6 +31,13 @@ impl TcpWriteActor {
                 if let Err(e) = r {
                     error!("Failed to write to socket; error = {:?}", e);
                     self.cancel_token.cancel();
+                    return;
+                }
+                let result = self.writer.flush().await;
+                if let Err(e) = result {
+                    error!("Failed to flush socket; error = {:?}", e);
+                    self.cancel_token.cancel();
+                    return;
                 }
             }
             Message::Close => {

@@ -46,10 +46,13 @@ impl SocketListener for TcpEventListener {
 
 #[cfg(test)]
 mod tests {
-    use bytes::{BufMut, BytesMut};
-    use tokio::{io::AsyncWriteExt, net::TcpStream};
+    use bytes::{Buf, BufMut, BytesMut};
+    use tokio::{
+        io::{AsyncReadExt, AsyncWriteExt},
+        net::TcpStream,
+    };
 
-    use crate::protocol::packet;
+    use crate::protocol::{message, packet};
 
     use super::*;
 
@@ -66,9 +69,16 @@ mod tests {
         // Connect to the server
         let stream = TcpStream::connect(addr.clone() + ":" + &port.to_string()).await;
         assert!(stream.is_ok());
-        let mut stream = stream.unwrap();
+        let (mut reader, mut writer) = stream.unwrap().into_split();
+        let handle = tokio::spawn(async move {
+            let mut buf = BytesMut::with_capacity(1024);
+            let _ = reader.read_buf(&mut buf).await;
+            let (pkt_type, mut data) = packet::decode(buf.freeze());
+            assert_eq!(pkt_type as u8, packet::PacketType::Handshake as u8);
+            assert_eq!(data.get_u8(), 20);
+        });
 
-        tokio::time::sleep(tokio::time::Duration::from_millis(1)).await;
+        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 
         // Assert that the client was added to the client manager
         let client = client_mgr.get_client(0);
@@ -78,10 +88,13 @@ mod tests {
         msg.put_u8(uid.len() as u8);
         msg.put_slice(uid);
         let packet = packet::encode(packet::PacketType::Handshake, msg.freeze());
-        stream.write_all(&packet).await.unwrap();
+        writer.write_all(&packet).await.unwrap();
+
         tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
         let c = client_mgr.get_client_by_uid("sl2@34jl2k3");
         assert!(c.is_some());
+
+        let _ = handle.await;
     }
 
     // #[tokio::test]
