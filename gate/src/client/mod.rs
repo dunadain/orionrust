@@ -16,7 +16,7 @@ pub trait NetClient: Send + Sync {
     fn onopen(self: &Arc<Self>) -> impl std::future::Future<Output = ()> + Send;
     fn receive_msg(
         self: &Arc<Self>,
-        msg: Bytes,
+        packet: Bytes,
         mgr: Self::ClientMgrType,
     ) -> impl std::future::Future<Output = ()> + Send;
     fn onclose(self: &Arc<Self>) -> impl std::future::Future<Output = ()> + Send;

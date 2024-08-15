@@ -46,7 +46,10 @@ impl SocketListener for TcpEventListener {
 
 #[cfg(test)]
 mod tests {
-    use tokio::net::TcpStream;
+    use bytes::{BufMut, BytesMut};
+    use tokio::{io::AsyncWriteExt, net::TcpStream};
+
+    use crate::protocol::packet;
 
     use super::*;
 
@@ -63,12 +66,22 @@ mod tests {
         // Connect to the server
         let stream = TcpStream::connect(addr.clone() + ":" + &port.to_string()).await;
         assert!(stream.is_ok());
+        let mut stream = stream.unwrap();
 
         tokio::time::sleep(tokio::time::Duration::from_millis(1)).await;
 
         // Assert that the client was added to the client manager
         let client = client_mgr.get_client(0);
         assert!(client.is_some());
+        let mut msg = BytesMut::new();
+        let uid = b"sl2@34jl2k3";
+        msg.put_u8(uid.len() as u8);
+        msg.put_slice(uid);
+        let packet = packet::encode(packet::PacketType::Handshake, msg.freeze());
+        stream.write_all(&packet).await.unwrap();
+        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+        let c = client_mgr.get_client_by_uid("sl2@34jl2k3");
+        assert!(c.is_some());
     }
 
     // #[tokio::test]

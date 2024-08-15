@@ -1,6 +1,6 @@
 pub mod tcp_actors;
 
-use bytes::{Bytes, BytesMut};
+use bytes::{BufMut, Bytes, BytesMut};
 pub use tcp_actors::TcpSocketHandle;
 
 use tokio::{
@@ -50,7 +50,8 @@ fn listen_for_data(
                 result = reader.read_buf(&mut buffer) => {
                     match result {
                         Ok(n) if n != 0 => {
-                            pkg_extractor.process(&buffer, n, 0).await;
+                            pkg_extractor.process(&buffer).await;
+                            buffer.clear();
                         }
                         other => {
                             if let Err(e) = other {
@@ -90,7 +91,6 @@ enum ReadState {
 const HEADER_SIZE: usize = 4;
 struct PackageExtractor<F: SocketListener> {
     pkg_buffer: BytesMut,
-    pkg_buffer_offset: usize, // for header and msg
     state: ReadState,
     event_listener: F,
     socket_handle: TcpSocketHandle,
@@ -100,16 +100,15 @@ impl<F: SocketListener> PackageExtractor<F> {
     fn new(event_listener: F, socket_handle: TcpSocketHandle) -> Self {
         Self {
             pkg_buffer: BytesMut::with_capacity(HEADER_SIZE),
-            pkg_buffer_offset: 0,
             state: ReadState::ReadingHeader,
             event_listener,
             socket_handle,
         }
     }
 
-    async fn process(&mut self, bytes: &BytesMut, len: usize, bytes_offset: usize) {
+    async fn process(&mut self, bytes: &BytesMut) {
         let mut pkgs = vec![];
-        self.extract(bytes, len, bytes_offset, &mut pkgs);
+        self.extract(bytes, 0, &mut pkgs);
         for pkg in pkgs {
             self.event_listener
                 .onmessage(self.socket_handle.clone(), pkg)
@@ -117,43 +116,38 @@ impl<F: SocketListener> PackageExtractor<F> {
         }
     }
 
-    fn extract(
-        &mut self,
-        bytes: &BytesMut,
-        len: usize,
-        mut bytes_offset: usize,
-        result_pkgs: &mut Vec<Bytes>,
-    ) {
+    fn extract(&mut self, bytes: &BytesMut, mut bytes_offset: usize, result_pkgs: &mut Vec<Bytes>) {
         let target_size = match self.state {
             ReadState::ReadingHeader => HEADER_SIZE,
-            ReadState::ReadingBody => self.pkg_buffer.len(),
+            ReadState::ReadingBody => {
+                let msg_len = (self.pkg_buffer[1] as u32) << 16
+                    | (self.pkg_buffer[2] as u32) << 8
+                    | self.pkg_buffer[3] as u32;
+                msg_len as usize + HEADER_SIZE
+            }
         };
+        let len = bytes.len();
         let data_length_available = len - bytes_offset;
-        let data_length_needed = target_size - self.pkg_buffer_offset;
+        let data_length_needed = target_size - self.pkg_buffer.len();
         let data_length_to_copy = std::cmp::min(data_length_available, data_length_needed);
-        self.pkg_buffer[self.pkg_buffer_offset..self.pkg_buffer_offset + data_length_to_copy]
-            .copy_from_slice(&bytes[bytes_offset..bytes_offset + data_length_to_copy]);
-        self.pkg_buffer_offset += data_length_to_copy;
+        self.pkg_buffer
+            .put_slice(&bytes[bytes_offset..(bytes_offset + data_length_to_copy)]);
+
         bytes_offset += data_length_to_copy;
-        if self.pkg_buffer_offset == target_size {
+        if self.pkg_buffer.len() == target_size {
             match self.state {
                 ReadState::ReadingHeader => {
-                    let msg_length = (self.pkg_buffer[1] as u32) << 16
-                        | (self.pkg_buffer[2] as u32) << 8
-                        | self.pkg_buffer[3] as u32;
-                    self.pkg_buffer.resize(HEADER_SIZE + msg_length as usize, 0);
                     self.state = ReadState::ReadingBody;
                 }
                 ReadState::ReadingBody => {
                     result_pkgs.push(self.pkg_buffer.clone().freeze());
                     self.pkg_buffer.clear();
-                    self.pkg_buffer_offset = 0;
                     self.state = ReadState::ReadingHeader;
                 }
             }
         }
         if bytes_offset < len {
-            self.extract(bytes, len, bytes_offset, result_pkgs);
+            self.extract(bytes, bytes_offset, result_pkgs);
         }
     }
 }

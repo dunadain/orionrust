@@ -39,8 +39,8 @@ pub struct Client<T: SocketHandle + Sync + Send + Clone + 'static> {
 // TODO: 从mongodb中加载用户数据到redis（从专门的redis管理服务器加载？）
 impl<T: SocketHandle + Sync + Send + Clone + 'static> NetClient for Client<T> {
     type ClientMgrType = ClientManager<Client<T>>;
-    async fn receive_msg(self: &Arc<Self>, msg: Bytes, mgr: ClientManager<Client<T>>) {
-        let (packet_type, decoded_body) = packet::decode(msg);
+    async fn receive_msg(self: &Arc<Self>, packet: Bytes, mgr: ClientManager<Client<T>>) {
+        let (packet_type, decoded_body) = packet::decode(packet);
         match packet_type {
             packet::PacketType::Handshake => {
                 if self.state.load(std::sync::atomic::Ordering::SeqCst) != WAIT_FOR_HANDSHAKE {
