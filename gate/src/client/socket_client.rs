@@ -100,7 +100,7 @@ impl<T: SocketHandle + Sync + Send + Clone + 'static> NetClient for Client<T> {
                         let mut reply = app().uuid().to_string();
                         reply.push_str(".reply.");
                         reply.push_str(&reqid.to_string());
-                        let result = nats().try_request(subject, reply, payload).await;
+                        let result = nats().publish_with_reply(subject, reply, payload).await;
                         if let Err(e) = result {
                             error!("{:?}", e);
                         }

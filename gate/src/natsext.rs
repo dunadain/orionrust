@@ -7,7 +7,7 @@ use orion::nats_client;
 use crate::global::nats;
 
 pub trait NatRequest {
-    fn try_request(
+    fn publish_with_reply(
         &self,
         subject: String,
         reply: String,
@@ -22,7 +22,7 @@ impl NatRequest for nats_client::NatsClient {
     /// push subject example: {serverid}.push
     ///
     /// request subject example(stateless): handler.{servertype}
-    async fn try_request(
+    async fn publish_with_reply(
         &self,
         subject: String,
         reply: String,
