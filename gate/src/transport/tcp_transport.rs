@@ -43,3 +43,102 @@ impl SocketListener for TcpEventListener {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use tokio::net::TcpStream;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_tcp_transport_start() {
+        let addr = "127.0.0.1".to_string();
+        let port = 8080;
+        let client_mgr = ClientManager::new();
+        super::start(addr.clone(), port, client_mgr.clone());
+
+        // Wait for the server to start
+        tokio::time::sleep(tokio::time::Duration::from_millis(1)).await;
+
+        // Connect to the server
+        let stream = TcpStream::connect(addr.clone() + ":" + &port.to_string()).await;
+        assert!(stream.is_ok());
+
+        tokio::time::sleep(tokio::time::Duration::from_millis(1)).await;
+
+        // Assert that the client was added to the client manager
+        let client = client_mgr.get_client(0);
+        assert!(client.is_some());
+    }
+
+    // #[tokio::test]
+    // async fn test_tcp_transport_onmessage() {
+    //     let addr = "127.0.0.1".to_string();
+    //     let port = 8080;
+    //     let client_mgr = ClientManager::new();
+    //     let handle = tokio::spawn(async move {
+    //         start(addr.clone(), port, client_mgr).await;
+    //     });
+
+    //     // Wait for the server to start
+    //     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+
+    //     // Connect to the server
+    //     let stream = TcpStream::connect((addr.clone(), port)).await;
+    //     assert_ok!(stream);
+
+    //     // Wait for the server to handle the connection
+    //     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+
+    //     // Send a message to the server
+    //     let mut stream = stream.unwrap();
+    //     let message = "Hello, server!";
+    //     stream.write_all(message.as_bytes()).await.unwrap();
+
+    //     // Wait for the server to receive the message
+    //     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+
+    //     // Assert that the client received the message
+    //     let client = client_mgr.get_client(0);
+    //     assert!(client.is_some());
+    //     let client = client.unwrap();
+    //     assert_eq!(client.get_received_msg(), Some(message.to_string()));
+
+    //     // Clean up
+    //     handle.abort();
+    // }
+
+    // #[tokio::test]
+    // async fn test_tcp_transport_onclose() {
+    //     let addr = "127.0.0.1".to_string();
+    //     let port = 8080;
+    //     let client_mgr = ClientManager::new();
+    //     let handle = tokio::spawn(async move {
+    //         start(addr.clone(), port, client_mgr).await;
+    //     });
+
+    //     // Wait for the server to start
+    //     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+
+    //     // Connect to the server
+    //     let stream = TcpStream::connect((addr.clone(), port)).await;
+    //     assert_ok!(stream);
+
+    //     // Wait for the server to handle the connection
+    //     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+
+    //     // Close the connection
+    //     let mut stream = stream.unwrap();
+    //     stream.shutdown().await.unwrap();
+
+    //     // Wait for the server to handle the close event
+    //     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+
+    //     // Assert that the client was removed from the client manager
+    //     let client = client_mgr.get_client(0);
+    //     assert!(client.is_none());
+
+    //     // Clean up
+    //     handle.abort();
+    // }
+}
