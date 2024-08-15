@@ -4,7 +4,7 @@ use bytes::{BufMut, Bytes, BytesMut};
 pub use tcp_actors::TcpSocketHandle;
 
 use tokio::{
-    io::AsyncReadExt,
+    io::{AsyncReadExt, BufReader},
     net::{TcpListener, TcpStream},
     select,
 };
@@ -45,9 +45,10 @@ fn listen_for_data(
         let mut buffer = BytesMut::with_capacity(1024);
         let mut pkg_extractor =
             PackageExtractor::new(event_listener.clone(), socket_handle.clone());
+        let mut buf_reader = BufReader::new(reader);
         loop {
             select! {
-                result = reader.read_buf(&mut buffer) => {
+                result = buf_reader.read_buf(&mut buffer) => {
                     match result {
                         Ok(n) if n != 0 => {
                             pkg_extractor.process(&buffer).await;
