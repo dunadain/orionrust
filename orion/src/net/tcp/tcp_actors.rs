@@ -18,7 +18,7 @@ enum Message {
 
 struct TcpWriteActor {
     receiver: mpsc::Receiver<Message>,
-    writer: BufWriter<OwnedWriteHalf>,
+    writer: OwnedWriteHalf,
     cancel_token: CancellationToken,
     is_closing: bool,
 }
@@ -30,12 +30,6 @@ impl TcpWriteActor {
                 let r = self.writer.write_all(&bytes).await;
                 if let Err(e) = r {
                     error!("Failed to write to socket; error = {:?}", e);
-                    self.cancel_token.cancel();
-                    return;
-                }
-                let result = self.writer.flush().await;
-                if let Err(e) = result {
-                    error!("Failed to flush socket; error = {:?}", e);
                     self.cancel_token.cancel();
                     return;
                 }
@@ -60,11 +54,10 @@ pub struct TcpSocketHandle {
 
 impl TcpSocketHandle {
     pub fn new(writer: OwnedWriteHalf, cancel_token: CancellationToken) -> Self {
-        let (sender, receiver) = mpsc::channel(20);
-        let buf_writer = BufWriter::new(writer);
+        let (sender, receiver) = mpsc::channel(50); // 必须压力测试测测看
         let write_actor = TcpWriteActor {
             receiver,
-            writer: buf_writer,
+            writer,
             cancel_token,
             is_closing: false,
         };

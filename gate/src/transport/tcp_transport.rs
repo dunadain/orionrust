@@ -78,7 +78,7 @@ mod tests {
             assert_eq!(data.get_u8(), 20);
         });
 
-        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+        tokio::time::sleep(tokio::time::Duration::from_millis(1)).await;
 
         // Assert that the client was added to the client manager
         let client = client_mgr.get_client(0);
