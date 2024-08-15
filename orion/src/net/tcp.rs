@@ -37,7 +37,7 @@ fn listen_for_data(
     socket: TcpStream,
     mut event_listener: impl SocketListener + Clone + Send + Sync + 'static,
 ) {
-    let (mut reader, writer) = socket.into_split();
+    let (reader, writer) = socket.into_split();
     let token = CancellationToken::new();
     let socket_handle = TcpSocketHandle::new(writer, token.clone());
     event_listener.onopen(socket_handle.clone());
