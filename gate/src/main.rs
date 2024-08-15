@@ -1,7 +1,7 @@
 use std::env;
 
 use async_nats::client;
-use gate::{global, natsext, transport, ClientManager};
+use gate::{global, natsext, s2clistener, transport, ClientManager};
 use orion::{app, async_redis};
 
 #[orion::init_tracing]
@@ -31,6 +31,6 @@ async fn main() {
         .unwrap();
     let client_mgr = ClientManager::new();
     transport::tcp_transport::start(addr, port, client_mgr.clone());
-    natsext::listen_for_s2c(client_mgr);
+    s2clistener::listen_for_s2c(client_mgr);
     app().start().await;
 }

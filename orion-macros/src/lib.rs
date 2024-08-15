@@ -12,7 +12,7 @@ pub fn init_tracing(_: TokenStream, item: TokenStream) -> TokenStream {
         quote! {
             let collector = tracing_subscriber::fmt()
             // filter spans/events with level TRACE or higher.
-            .with_max_level(tracing::Level::INFO)
+            .with_max_level(tracing::Level::DEBUG)
             .with_file(true)
             .with_line_number(true)
             .with_target(true)
