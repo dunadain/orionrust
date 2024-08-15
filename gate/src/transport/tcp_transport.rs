@@ -95,6 +95,9 @@ mod tests {
         assert!(c.is_some());
 
         let _ = handle.await;
+        c.unwrap().close().await;
+        assert!(client_mgr.get_client(0).is_none());
+        assert!(client_mgr.get_client_by_uid("sl2@34jl2k3").is_none());
     }
 
     // #[tokio::test]
