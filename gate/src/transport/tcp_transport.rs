@@ -52,7 +52,7 @@ mod tests {
         net::TcpStream,
     };
 
-    use crate::protocol::{message, packet};
+    use crate::protocol::packet;
 
     use super::*;
 
