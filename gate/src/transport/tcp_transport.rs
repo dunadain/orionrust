@@ -90,11 +90,13 @@ mod tests {
         let packet = packet::encode(packet::PacketType::Handshake, msg.freeze());
         writer.write_all(&packet).await.unwrap();
 
-        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+        tokio::time::sleep(tokio::time::Duration::from_millis(1)).await;
         let c = client_mgr.get_client_by_uid("sl2@34jl2k3");
         assert!(c.is_some());
 
         let _ = handle.await;
+
+        // close test
         c.unwrap().close().await;
         assert!(client_mgr.get_client(0).is_none());
         assert!(client_mgr.get_client_by_uid("sl2@34jl2k3").is_none());
