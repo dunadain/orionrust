@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use async_nats::{Message, RequestErrorKind};
+use async_nats::{Message, RequestErrorKind, Subject};
 use bytes::Bytes;
 use tokio::time::sleep;
 use tracing::error;
@@ -11,7 +11,7 @@ pub struct NatsClient {
 }
 
 impl NatsClient {
-    pub async fn publish(&self, subject: String, payload: Bytes) -> Result<(), &'static str> {
+    pub async fn publish(&self, subject: Subject, payload: Bytes) -> Result<(), &'static str> {
         for i in 1..4 {
             let result = self.client.publish(subject.clone(), payload.clone()).await;
             match result {

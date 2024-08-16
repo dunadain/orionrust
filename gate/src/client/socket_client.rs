@@ -106,7 +106,7 @@ impl<T: SocketHandle + Sync + Send + Clone + 'static> NetClient for Client<T> {
                         }
                     }
                     message::MsgType::Notify => {
-                        let result = nats().publish(subject, payload).await;
+                        let result = nats().publish(subject.into(), payload).await;
                         if let Err(e) = result {
                             error!("{}", e);
                         }
