@@ -13,7 +13,6 @@ use tracing::error;
 use crate::{
     config::{protocols, server_config},
     global::nats,
-    natsext::NatRequest,
     protocol::{message, packet},
 };
 
