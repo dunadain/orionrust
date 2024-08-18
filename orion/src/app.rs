@@ -9,14 +9,14 @@ use tokio::{
 };
 use tracing::info;
 
-pub struct Application {
+pub struct AppInfo {
     uuid: u32,
     server_type: String,
 }
 
-impl Application {
+impl AppInfo {
     pub fn new() -> Self {
-        Application {
+        AppInfo {
             uuid: env::var("server_id")
                 .unwrap_or_else(|_| 0.to_string())
                 .parse()
@@ -52,7 +52,7 @@ impl Application {
 }
 
 // only immutable data can be stored in a static variable
-pub fn appinfo() -> &'static Application {
-    static APP: OnceLock<Application> = OnceLock::new();
-    APP.get_or_init(|| Application::new())
+pub fn appinfo() -> &'static AppInfo {
+    static APP: OnceLock<AppInfo> = OnceLock::new();
+    APP.get_or_init(|| AppInfo::new())
 }
