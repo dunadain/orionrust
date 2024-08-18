@@ -31,5 +31,6 @@ async fn main() {
     let client_mgr = ClientManager::new();
     transport::tcp_transport::start(addr, port, client_mgr.clone());
     s2clistener::listen_for_s2c(client_mgr);
-    appinfo().start().await;
+    let app = orion::Application::new();
+    app.start().await;
 }

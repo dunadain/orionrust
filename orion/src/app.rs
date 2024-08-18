@@ -32,6 +32,20 @@ impl AppInfo {
     pub fn server_type(&self) -> &str {
         &self.server_type
     }
+}
+
+// only immutable data can be stored in a static variable
+pub fn appinfo() -> &'static AppInfo {
+    static APP: OnceLock<AppInfo> = OnceLock::new();
+    APP.get_or_init(|| AppInfo::new())
+}
+
+pub struct Application;
+
+impl Application {
+    pub fn new() -> Self {
+        Application
+    }
 
     pub async fn start(&self) {
         info!("Application has started");
@@ -49,10 +63,4 @@ impl AppInfo {
     }
 
     async fn shutdown(&self) {}
-}
-
-// only immutable data can be stored in a static variable
-pub fn appinfo() -> &'static AppInfo {
-    static APP: OnceLock<AppInfo> = OnceLock::new();
-    APP.get_or_init(|| AppInfo::new())
 }
