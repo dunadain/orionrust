@@ -1,5 +1,5 @@
 use futures::StreamExt;
-use orion::{app, nats_msg};
+use orion::{appinfo, nats_msg};
 use tracing::debug;
 
 use crate::{client::NetClient, global::nats, protocol::message::MsgType, ClientManager};
@@ -7,7 +7,7 @@ use crate::{client::NetClient, global::nats, protocol::message::MsgType, ClientM
 /// 从其他服务器收到的push和response消息(server 2 client)
 pub fn listen_for_s2c<T: NetClient + 'static>(client_mgr: ClientManager<T>) {
     tokio::spawn(async move {
-        let mut generic_subject = app().uuid().to_string();
+        let mut generic_subject = appinfo().uuid().to_string();
         generic_subject.push_str(".>");
         let mut subscription = nats().subscribe(generic_subject).await;
         while let Some(msg) = subscription.next().await {

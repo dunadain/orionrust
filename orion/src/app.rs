@@ -11,6 +11,7 @@ use tracing::info;
 
 pub struct Application {
     uuid: u32,
+    server_type: String,
 }
 
 impl Application {
@@ -20,11 +21,16 @@ impl Application {
                 .unwrap_or_else(|_| 0.to_string())
                 .parse()
                 .expect("server_id should be a number"),
+            server_type: env::var("server_type").unwrap_or_else(|_| "".to_string()),
         }
     }
 
     pub fn uuid(&self) -> u32 {
         self.uuid
+    }
+
+    pub fn server_type(&self) -> &str {
+        &self.server_type
     }
 
     pub async fn start(&self) {
@@ -46,7 +52,7 @@ impl Application {
 }
 
 // only immutable data can be stored in a static variable
-pub fn app() -> &'static Application {
+pub fn appinfo() -> &'static Application {
     static APP: OnceLock<Application> = OnceLock::new();
     APP.get_or_init(|| Application::new())
 }

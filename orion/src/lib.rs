@@ -1,5 +1,5 @@
 mod app;
-pub use app::app;
+pub use app::appinfo;
 
 mod net;
 pub use net::socket_handle::SocketHandle;

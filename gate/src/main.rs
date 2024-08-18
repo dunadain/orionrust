@@ -1,7 +1,7 @@
 use std::env;
 
 use gate::{global, s2clistener, transport, ClientManager};
-use orion::{app, async_redis};
+use orion::{appinfo, async_redis};
 
 #[orion::init_tracing]
 #[tokio::main]
@@ -31,5 +31,5 @@ async fn main() {
     let client_mgr = ClientManager::new();
     transport::tcp_transport::start(addr, port, client_mgr.clone());
     s2clistener::listen_for_s2c(client_mgr);
-    app().start().await;
+    appinfo().start().await;
 }
