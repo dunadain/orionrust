@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+package rpc.items;
+
+service Greeter {
+    rpc SayHello (HelloRequest) returns (HelloReply) {}
+    rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty);
+}
+
+message HelloRequest {
+    string name = 1;
+}
+
+message HelloReply {
+    string message = 1;
+}
+
+service Attacker {
+    rpc Attack (AttackRequest) returns (AttackReply) {}
+}
+
+message AttackRequest {
+    string name = 1;
+}
+
+message AttackReply {
+    string message = 1;
+}
