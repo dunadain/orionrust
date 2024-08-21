@@ -1,6 +1,6 @@
 use std::env;
 
-use gate::{global, s2clistener, transport, ClientManager};
+use gate::{global, rpc_helper, s2clistener, transport, ClientManager};
 use orion::{async_redis, rpc_subscriber};
 
 #[orion_macros::init_tracing]
@@ -32,7 +32,7 @@ async fn main() {
     transport::tcp_transport::start(addr, port, client_mgr.clone());
     s2clistener::listen_for_s2c(client_mgr);
     rpc_subscriber::subscribe(global::nats().clone());
-    // register_rpc();
+    rpc_helper::register_all();
     let app = orion::Application::new();
     app.start().await;
 }

@@ -4,6 +4,6 @@ mod config;
 pub mod global;
 pub mod natsext;
 mod protocol;
-pub mod register_rpc;
+pub mod rpc_helper;
 pub mod s2clistener;
 pub mod transport;

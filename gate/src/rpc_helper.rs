@@ -1,7 +1,7 @@
 use orion::register_rpc;
 use protobuf::rpc::{HelloReply, HelloRequest};
 
-pub fn register_rpc() {
+pub fn register_all() {
     register_rpc!(
         "Greeter.SayHello" => test
     );
