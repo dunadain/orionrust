@@ -16,15 +16,27 @@ pub struct AppInfo {
 
 impl AppInfo {
     pub fn new() -> Self {
+        let uuid: u32 = env::var("server_id")
+            .unwrap_or_else(|_| 1.to_string())
+            .parse()
+            .expect("server_id should be a number");
+        if uuid == 0 {
+            panic!("server_id should not be 0");
+        }
         AppInfo {
             uuid: env::var("server_id")
-                .unwrap_or_else(|_| 0.to_string())
+                .unwrap_or_else(|_| 1.to_string())
                 .parse()
                 .expect("server_id should be a number"),
             server_type: env::var("server_type").unwrap_or_else(|_| "".to_string()),
         }
     }
 
+    /// Returns the UUID of the server.
+    ///
+    /// uuid is a unique identifier for the server
+    ///
+    /// and must be greater than 0
     pub fn uuid(&self) -> u32 {
         self.uuid
     }
