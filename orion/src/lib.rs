@@ -11,6 +11,7 @@ pub use net::tcp::SocketListener;
 mod nats;
 pub use nats::nats_client;
 pub use nats::nats_msg;
+pub use nats::rpc_subscriber;
 
 pub mod async_redis;
 

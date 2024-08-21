@@ -79,7 +79,7 @@ pub fn rpc_router() -> &'static RpcRouter {
 #[macro_export]
 macro_rules! register {
     ($($name:literal => $handler:expr),*) => {
-        register_rpc_routes(vec![$(Pair($name, $handler)),*]);
+        register_rpc_routes(vec![$(Pair($name, Box::new(rpchandler::RpcHandlerWrapper::new($handler)))),*]);
     };
 }
 
