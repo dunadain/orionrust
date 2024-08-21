@@ -62,10 +62,10 @@ impl TcpSocketHandle {
             is_closing: false,
         };
         tokio::spawn(run_write_actor(write_actor));
-        static ENUMERATOR: AtomicU32 = AtomicU32::new(0);
+        static ENUMERATOR: AtomicU32 = AtomicU32::new(1);
         let id = ENUMERATOR.fetch_add(1, Ordering::SeqCst);
         if id == u32::MAX {
-            ENUMERATOR.store(0, Ordering::SeqCst);
+            ENUMERATOR.store(1, Ordering::SeqCst);
         }
         TcpSocketHandle { sender, id }
     }
