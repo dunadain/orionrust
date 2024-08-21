@@ -269,6 +269,7 @@ mod tests {
         let uid = b"myuuid";
         msg.put_u8(uid.len() as u8);
         msg.put_slice(uid);
+        msg.put_u32(1); // client version
         let packet = packet::encode(packet::PacketType::Handshake, msg.freeze());
         let client = mgr.get_client(socket_id).unwrap();
         client.receive_msg(packet, mgr.clone()).await;

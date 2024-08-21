@@ -87,6 +87,7 @@ mod tests {
         let uid = b"sl2@34jl2k3";
         msg.put_u8(uid.len() as u8);
         msg.put_slice(uid);
+        msg.put_u32(98); // client version
         let packet = packet::encode(packet::PacketType::Handshake, msg.freeze());
         writer.write_all(&packet).await.unwrap();
 
