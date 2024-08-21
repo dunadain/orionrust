@@ -9,6 +9,6 @@ pub fn register_all() {
 
 async fn test(req: HelloRequest) -> HelloReply {
     HelloReply {
-        message: format!("Hello, {}!", req.name),
+        message: format!("Hello, {}", req.name),
     }
 }

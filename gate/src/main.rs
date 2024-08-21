@@ -16,6 +16,7 @@ async fn main() {
     // println!("test: {}", rv);
     // let r: i32 = redis.del("test").await.unwrap();
     // println!("del: {}", r);
+    env::set_var("server_type", "gate");
     let nats_url = env::var("NATS_URL").unwrap_or_else(|_| "nats://localhost:4222".to_string());
     let nats = orion::nats_client::connect(nats_url).await;
     let redis_url = env::var("REDIS_URL").unwrap_or_else(|_| "redis://localhost:6379".to_string());
@@ -31,7 +32,7 @@ async fn main() {
     let client_mgr = ClientManager::new();
     transport::tcp_transport::start(addr, port, client_mgr.clone());
     s2clistener::listen_for_s2c(client_mgr);
-    rpc_subscriber::subscribe(global::nats().clone());
+    rpc_subscriber::queue_subscribe(global::nats().clone());
     rpc_helper::register_all();
     let app = orion::Application::new();
     app.start().await;
