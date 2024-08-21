@@ -139,7 +139,9 @@ impl<T: SocketHandle + Sync + Send + Clone + 'static> NetClient for Client<T> {
     }
 
     async fn kick(self: &Arc<Self>) {
-        todo!()
+        self.socket
+            .send(packet::encode(packet::PacketType::Kick, Bytes::new()))
+            .await;
     }
 
     async fn sendmsg(
