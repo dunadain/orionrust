@@ -29,6 +29,10 @@ pub trait NetClient: Send + Sync {
         data: Bytes,
         reqid: u8,
     ) -> impl std::future::Future<Output = ()> + Send;
+    fn report_error(
+        self: &Arc<Self>,
+        error_code: u16,
+    ) -> impl std::future::Future<Output = ()> + Send;
 }
 
 #[derive(Clone)]
@@ -227,6 +231,10 @@ mod tests {
             data: Bytes,
             reqid: u8,
         ) {
+            todo!()
+        }
+
+        async fn report_error(self: &Arc<Self>, error_code: u16) {
             todo!()
         }
     }

@@ -4,7 +4,7 @@ use std::{
     time::Duration,
 };
 
-use bytes::{BufMut, Bytes, BytesMut};
+use bytes::{Buf, BufMut, Bytes, BytesMut};
 use orion::{appinfo, nats_msg, SocketHandle};
 use tokio::{select, sync::mpsc, time::sleep};
 use tokio_util::sync::CancellationToken;
@@ -24,6 +24,15 @@ const READY: u8 = 2;
 
 const HEARTBEAT_INTERVAL: u8 = 30;
 
+enum ErrorCode {
+    InvalidHandshake = 1,
+    OutedClient = 2,
+}
+
+fn check_client(client_ver: u32) -> bool {
+    true
+}
+
 #[derive(Clone)]
 pub struct Client<T: SocketHandle + Sync + Send + Clone + 'static> {
     uid: Arc<Mutex<String>>,
@@ -39,14 +48,27 @@ pub struct Client<T: SocketHandle + Sync + Send + Clone + 'static> {
 impl<T: SocketHandle + Sync + Send + Clone + 'static> NetClient for Client<T> {
     type ClientMgrType = ClientManager<Client<T>>;
     async fn receive_msg(self: &Arc<Self>, packet: Bytes, mgr: ClientManager<Client<T>>) {
-        let (packet_type, decoded_body) = packet::decode(packet);
+        let (packet_type, mut decoded_body) = packet::decode(packet);
         match packet_type {
             packet::PacketType::Handshake => {
                 if self.state.load(std::sync::atomic::Ordering::SeqCst) != WAIT_FOR_HANDSHAKE {
                     return;
                 }
-                let uid_len = decoded_body[0];
-                let uid_bytes = decoded_body.slice(1..(uid_len + 1) as usize);
+                if decoded_body.len() < 1 || decoded_body.len() < (decoded_body[0] + 5).into() {
+                    self.report_error(ErrorCode::InvalidHandshake as u16).await;
+                    self.socket.close().await;
+                    return;
+                }
+                let uid_len = decoded_body.get_u8();
+                let uid_bytes = decoded_body.slice(..uid_len as usize);
+                decoded_body.advance(uid_len as usize);
+
+                let client_ver = decoded_body.get_u32();
+                if !check_client(client_ver) {
+                    self.report_error(ErrorCode::OutedClient as u16).await;
+                    self.socket.close().await;
+                    return;
+                }
                 let uid = String::from_utf8(uid_bytes.to_vec());
                 match uid {
                     Ok(uid) => {
@@ -155,6 +177,13 @@ impl<T: SocketHandle + Sync + Send + Clone + 'static> NetClient for Client<T> {
         }
         let msgbody = message::encode(msg_type, proto_id, reqid, data);
         let packet = packet::encode(packet::PacketType::Data, msgbody);
+        self.socket.send(packet).await;
+    }
+
+    async fn report_error(self: &Arc<Self>, error_code: u16) {
+        let mut msg = BytesMut::new();
+        msg.put_u16(error_code);
+        let packet = packet::encode(packet::PacketType::Error, msg.freeze());
         self.socket.send(packet).await;
     }
 }
