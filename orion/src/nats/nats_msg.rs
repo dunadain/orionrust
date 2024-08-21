@@ -1,13 +1,13 @@
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 
 pub fn encode(id: u32, proto_id: u16, reqid: u8, uid: String, svrid: u32, data: Bytes) -> Bytes {
-    let mut buf = BytesMut::with_capacity(4 + 2 + uid.len() + 4 + data.len());
-    buf.put_u32(id);
-    buf.put_u16(proto_id);
-    buf.put_u8(reqid);
-    buf.put_u8(uid.len() as u8);
+    let mut buf = BytesMut::with_capacity(12 + uid.len() + data.len()); // id(4) + proto_id(2) + reqid(1) + uidlen(1) + uid.len() + svrid(4) + data.len()
+    buf.put_u32(id); // 4
+    buf.put_u16(proto_id); // 2
+    buf.put_u8(reqid); // 1
+    buf.put_u8(uid.len() as u8); // 1
     buf.put_slice(uid.as_bytes());
-    buf.put_u32(svrid);
+    buf.put_u32(svrid); // 4
     buf.put(data);
     buf.freeze()
 }
