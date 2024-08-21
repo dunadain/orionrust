@@ -236,6 +236,7 @@ mod tests {
     struct MockSocketHandle {
         id: u32,
         close_called: Arc<AtomicBool>,
+        send_bytes: Arc<Mutex<Option<Bytes>>>,
     }
 
     impl SocketHandle for MockSocketHandle {
@@ -243,7 +244,10 @@ mod tests {
             self.id
         }
 
-        async fn send(&self, _message: Bytes) {}
+        async fn send(&self, _message: Bytes) {
+            let mut send_bytes = self.send_bytes.lock().unwrap();
+            *send_bytes = Some(_message);
+        }
 
         async fn close(&self) {
             self.close_called
@@ -257,6 +261,7 @@ mod tests {
         let client = Client::new(MockSocketHandle {
             id: socket_id,
             close_called: Arc::new(AtomicBool::new(false)),
+            send_bytes: Arc::new(Mutex::new(None)),
         });
         let mut mgr = ClientManager::new();
         mgr.add_client(socket_id, client);
@@ -281,6 +286,7 @@ mod tests {
         let client = Client::new(MockSocketHandle {
             id: socket_id,
             close_called: Arc::new(AtomicBool::new(false)),
+            send_bytes: Arc::new(Mutex::new(None)),
         });
         let mut mgr = ClientManager::new();
         mgr.add_client(socket_id, client);
@@ -294,6 +300,30 @@ mod tests {
             client.state.load(std::sync::atomic::Ordering::SeqCst),
             READY
         );
+    }
+
+    #[tokio::test]
+    async fn test_report_error() {
+        let socket_id = 1238475;
+        let client = Client::new(MockSocketHandle {
+            id: socket_id,
+            close_called: Arc::new(AtomicBool::new(false)),
+            send_bytes: Arc::new(Mutex::new(None)),
+        });
+        let mut mgr = ClientManager::new();
+        mgr.add_client(socket_id, client);
+        let client = mgr.get_client(socket_id).unwrap();
+        client
+            .report_error(ErrorCode::OutedClient as u16, "outed client")
+            .await;
+        let mut send_bytes = client.socket.send_bytes.lock().unwrap();
+        assert!(send_bytes.is_some());
+        let send_bytes = send_bytes.take().unwrap();
+        let (packet_type, mut body) = packet::decode(send_bytes.clone());
+        assert_eq!(packet_type, packet::PacketType::Error);
+        assert_eq!(body.get_u16(), ErrorCode::OutedClient as u16);
+        assert_eq!(body.get_u8(), 12);
+        assert_eq!(body, Bytes::from_static(b"outed client"));
     }
 
     // #[tokio::test]

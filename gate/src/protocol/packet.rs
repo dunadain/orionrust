@@ -2,6 +2,7 @@ use bytes::{BufMut, Bytes, BytesMut};
 
 const PKT_HEAD_LEN: usize = 4;
 
+#[derive(Debug, PartialEq)]
 pub enum PacketType {
     Handshake,
     HandshakeAck,
