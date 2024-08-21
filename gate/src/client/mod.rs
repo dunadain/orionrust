@@ -32,6 +32,7 @@ pub trait NetClient: Send + Sync {
     fn report_error(
         self: &Arc<Self>,
         error_code: u16,
+        message: &str,
     ) -> impl std::future::Future<Output = ()> + Send;
 }
 
@@ -234,7 +235,7 @@ mod tests {
             todo!()
         }
 
-        async fn report_error(self: &Arc<Self>, error_code: u16) {
+        async fn report_error(self: &Arc<Self>, error_code: u16, message: &str) {
             todo!()
         }
     }

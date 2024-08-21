@@ -27,6 +27,7 @@ const HEARTBEAT_INTERVAL: u8 = 30;
 enum ErrorCode {
     InvalidHandshake = 1,
     OutedClient = 2,
+    InvalidUID = 3,
 }
 
 fn check_client(client_ver: u32) -> bool {
@@ -55,7 +56,8 @@ impl<T: SocketHandle + Sync + Send + Clone + 'static> NetClient for Client<T> {
                     return;
                 }
                 if decoded_body.len() < 1 || decoded_body.len() < (decoded_body[0] + 5).into() {
-                    self.report_error(ErrorCode::InvalidHandshake as u16).await;
+                    self.report_error(ErrorCode::InvalidHandshake as u16, "invalid handshake")
+                        .await;
                     self.socket.close().await;
                     return;
                 }
@@ -65,7 +67,8 @@ impl<T: SocketHandle + Sync + Send + Clone + 'static> NetClient for Client<T> {
 
                 let client_ver = decoded_body.get_u32();
                 if !check_client(client_ver) {
-                    self.report_error(ErrorCode::OutedClient as u16).await;
+                    self.report_error(ErrorCode::OutedClient as u16, "outed client")
+                        .await;
                     self.socket.close().await;
                     return;
                 }
@@ -77,7 +80,9 @@ impl<T: SocketHandle + Sync + Send + Clone + 'static> NetClient for Client<T> {
                         mgr.bind_connection(uid, self.socket.id());
                     }
                     Err(e) => {
-                        error!("Failed to parse uid: {}", e);
+                        self.report_error(ErrorCode::InvalidUID as u16, &format!("{}", e))
+                            .await;
+                        error!("invalid uid: {}", e);
                         self.socket.close().await;
                         return;
                     }
@@ -180,9 +185,11 @@ impl<T: SocketHandle + Sync + Send + Clone + 'static> NetClient for Client<T> {
         self.socket.send(packet).await;
     }
 
-    async fn report_error(self: &Arc<Self>, error_code: u16) {
+    async fn report_error(self: &Arc<Self>, error_code: u16, message: &str) {
         let mut msg = BytesMut::new();
         msg.put_u16(error_code);
+        msg.put_u8(message.len() as u8);
+        msg.put_slice(message.as_bytes());
         let packet = packet::encode(packet::PacketType::Error, msg.freeze());
         self.socket.send(packet).await;
     }
