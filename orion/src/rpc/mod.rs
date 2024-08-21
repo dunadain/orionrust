@@ -26,8 +26,8 @@ impl RpcRouter {
         self.map.insert(name, handler);
     }
 
-    pub async fn handle(&self, name: String, request: Bytes) -> Bytes {
-        let handler = self.map.get(&name);
+    pub async fn handle(&self, name: &str, request: Bytes) -> Bytes {
+        let handler = self.map.get(name);
         match handler {
             None => {
                 tracing::error!("rpc handler not found for {}", name);
@@ -73,7 +73,7 @@ pub fn register_rpc_routes(routes: Vec<Pair>) {
 
 static RPCROUTER: OnceLock<RpcRouter> = OnceLock::new();
 pub fn rpc_router() -> &'static RpcRouter {
-    RPCROUTER.get().expect("Nats not registered")
+    RPCROUTER.get().expect("rpc router not initialized")
 }
 
 #[macro_export]
@@ -112,7 +112,7 @@ mod tests {
         // Unwrap is safe, since we have reserved sufficient capacity in the vector.
         req.encode(&mut buf).unwrap();
         let request = buf.freeze();
-        let response = router.handle("mock".to_string(), request).await;
+        let response = router.handle("mock", request).await;
         let reply = HelloReply::decode(response).unwrap();
         assert_eq!(reply.message, "Hello, world!");
     }
@@ -122,7 +122,7 @@ mod tests {
         let router = RpcRouter::new();
 
         let request = Bytes::from("test request");
-        let response = router.handle("nonexistent".to_string(), request).await;
+        let response = router.handle("nonexistent", request).await;
 
         assert_eq!(response[0], RpcError::NotFound as u8);
     }
@@ -136,7 +136,7 @@ mod tests {
         );
 
         let request = Bytes::from("test request");
-        let response = router.handle("error".to_string(), request).await;
+        let response = router.handle("error", request).await;
 
         assert_eq!(response[0], RpcError::HandlerError as u8);
     }
