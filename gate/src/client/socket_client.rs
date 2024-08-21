@@ -87,10 +87,11 @@ impl<T: SocketHandle + Sync + Send + Clone + 'static> NetClient for Client<T> {
                 let index = proto_str.find("-").expect("should have - in the protocol");
                 let server_type = &proto_str[..index];
                 let mut subject = "handler.".to_string();
-                subject.push_str(server_type);
-                if server_config()[server_type]["stateless"] == false {
-                    // TODO: add specific server uuid to the subject(eg. handler.servertype.uuid) 要是这个uuid服务器挂了咋办
-                }
+                if server_config()[server_type]["stateless"] == true {
+                    subject.push_str(server_type);
+                } else {
+                    // TODO: add specific server uuid to the subject(eg. handler.servertype/uuid) 要是这个uuid服务器挂了咋办
+                };
                 let uid = self.uid.lock().unwrap().clone();
                 let payload = nats_msg::encode(
                     self.socket.id(),
