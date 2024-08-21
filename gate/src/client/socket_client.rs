@@ -120,7 +120,6 @@ impl<T: SocketHandle + Sync + Send + Clone + 'static> NetClient for Client<T> {
                     _ => {}
                 };
             }
-            packet::PacketType::Error => todo!(),
             _ => {}
         }
     }
