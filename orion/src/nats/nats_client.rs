@@ -86,6 +86,20 @@ impl NatsClient {
             }
         }
     }
+
+    pub async fn queue_subscribe(
+        &self,
+        subject: String,
+        queue_group: String,
+    ) -> async_nats::Subscriber {
+        let result = self.client.queue_subscribe(subject, queue_group).await;
+        match result {
+            Ok(sub) => sub,
+            Err(e) => {
+                panic!("Failed to queue subscribe to NATS server: {}", e);
+            }
+        }
+    }
 }
 
 pub async fn connect(url: String) -> NatsClient {
