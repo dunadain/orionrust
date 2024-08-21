@@ -24,10 +24,7 @@ impl AppInfo {
             panic!("server_id should not be 0");
         }
         AppInfo {
-            uuid: env::var("server_id")
-                .unwrap_or_else(|_| 1.to_string())
-                .parse()
-                .expect("server_id should be a number"),
+            uuid,
             server_type: env::var("server_type").unwrap_or_else(|_| "".to_string()),
         }
     }
