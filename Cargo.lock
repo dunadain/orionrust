@@ -711,9 +711,12 @@ name = "orion"
 version = "0.1.0"
 dependencies = [
  "async-nats",
+ "async-trait",
  "bytes",
  "futures",
  "orion-macros",
+ "prost",
+ "protobuf",
  "redis 0.26.0",
  "tokio",
  "tokio-util",
