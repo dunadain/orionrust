@@ -15,6 +15,4 @@ pub use nats::rpc_subscriber;
 
 pub mod async_redis;
 
-pub use orion_macros::init_tracing;
-
 pub mod rpc;

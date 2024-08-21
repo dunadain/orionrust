@@ -1,9 +1,9 @@
 use std::env;
 
 use gate::{global, s2clistener, transport, ClientManager};
-use orion::{appinfo, async_redis};
+use orion::{async_redis, rpc_subscriber};
 
-#[orion::init_tracing]
+#[orion_macros::init_tracing]
 #[tokio::main]
 async fn main() {
     // let s = fs::read_to_string("gate/config/proto.txt").unwrap();
@@ -31,6 +31,8 @@ async fn main() {
     let client_mgr = ClientManager::new();
     transport::tcp_transport::start(addr, port, client_mgr.clone());
     s2clistener::listen_for_s2c(client_mgr);
+    rpc_subscriber::subscribe(global::nats().clone());
+    // register_rpc();
     let app = orion::Application::new();
     app.start().await;
 }
