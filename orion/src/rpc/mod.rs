@@ -61,7 +61,7 @@ where
     Box::new(rpchandler::RpcHandlerWrapper::new(handle))
 }
 
-pub struct Pair(&'static str, Box<dyn RpcHandler>);
+pub struct Pair(pub &'static str, pub Box<dyn RpcHandler>);
 
 pub fn register_rpc_routes(routes: Vec<Pair>) {
     let mut router = RpcRouter::new();
@@ -74,13 +74,6 @@ pub fn register_rpc_routes(routes: Vec<Pair>) {
 static RPCROUTER: OnceLock<RpcRouter> = OnceLock::new();
 pub fn rpc_router() -> &'static RpcRouter {
     RPCROUTER.get().expect("rpc router not initialized")
-}
-
-#[macro_export]
-macro_rules! register {
-    ($($name:literal => $handler:expr),*) => {
-        register_rpc_routes(vec![$(Pair($name, Box::new(rpchandler::RpcHandlerWrapper::new($handler)))),*]);
-    };
 }
 
 #[cfg(test)]
