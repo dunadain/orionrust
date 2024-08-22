@@ -5,7 +5,7 @@ use serde_json::Value;
 pub fn server_config() -> &'static Value {
     static SERVER_CONFIG: OnceLock<Value> = OnceLock::new();
     SERVER_CONFIG.get_or_init(|| {
-        let s = fs::read_to_string("config/server.json").unwrap();
+        let s = fs::read_to_string("config/servers.json").unwrap();
         serde_json::from_str(&s).unwrap()
     })
 }
