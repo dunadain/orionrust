@@ -194,7 +194,7 @@ impl<T: SocketHandle + Sync + Send + Clone + 'static> NetClient for Client<T> {
     async fn report_error(self: &Arc<Self>, error_code: u16, message: &str) {
         let mut msg = BytesMut::new();
         msg.put_u16(error_code);
-        msg.put_u8(message.len() as u8);
+        // msg.put_u8(message.len() as u8);
         msg.put_slice(message.as_bytes());
         let packet = packet::encode(packet::PacketType::Error, msg.freeze());
         self.socket.send(packet).await;
