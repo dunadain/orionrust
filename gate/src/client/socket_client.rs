@@ -74,15 +74,21 @@ impl<T: SocketHandle + Sync + Send + Clone + 'static> NetClient for Client<T> {
                 }
                 let uid = String::from_utf8(uid_bytes.to_vec());
                 match uid {
-                    Ok(uid) => {
+                    Ok(uid) if uid != "" => {
                         // TODO: 剔除重复登录用户
                         *self.uid.lock().unwrap() = uid.clone();
                         mgr.bind_connection(uid, self.socket.id());
                     }
-                    Err(e) => {
-                        self.report_error(ErrorCode::InvalidUID as u16, &format!("{}", e))
-                            .await;
-                        error!("invalid uid: {}", e);
+                    other => {
+                        if let Err(e) = other {
+                            self.report_error(ErrorCode::InvalidUID as u16, &format!("{}", e))
+                                .await;
+                            error!("invalid uid: {}", e);
+                        } else {
+                            self.report_error(ErrorCode::InvalidUID as u16, "empty uid")
+                                .await;
+                            error!("empty uid");
+                        }
                         self.socket.close().await;
                         return;
                     }
