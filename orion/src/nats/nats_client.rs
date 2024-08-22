@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use async_nats::{Message, RequestErrorKind, Subject};
+use async_nats::Subject;
 use bytes::Bytes;
 use tokio::time::sleep;
 use tracing::error;
