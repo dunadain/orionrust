@@ -329,7 +329,6 @@ mod tests {
         let (packet_type, mut body) = packet::decode(send_bytes.clone());
         assert_eq!(packet_type, packet::PacketType::Error);
         assert_eq!(body.get_u16(), ErrorCode::OutedClient as u16);
-        assert_eq!(body.get_u8(), 12);
         assert_eq!(body, Bytes::from_static(b"outed client"));
     }
 

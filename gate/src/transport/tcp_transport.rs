@@ -80,8 +80,9 @@ mod tests {
 
         tokio::time::sleep(tokio::time::Duration::from_millis(1)).await;
 
+        let client_id = 1;
         // Assert that the client was added to the client manager
-        let client = client_mgr.get_client(0);
+        let client = client_mgr.get_client(client_id);
         assert!(client.is_some());
         let mut msg = BytesMut::new();
         let uid = b"sl2@34jl2k3";
@@ -99,7 +100,7 @@ mod tests {
 
         // close test
         c.unwrap().close().await;
-        assert!(client_mgr.get_client(0).is_none());
+        assert!(client_mgr.get_client(client_id).is_none());
         assert!(client_mgr.get_client_by_uid("sl2@34jl2k3").is_none());
     }
 
