@@ -1,6 +1,6 @@
 use std::{
     collections::HashMap,
-    sync::{atomic::AtomicU8, Arc, Mutex},
+    sync::{atomic::AtomicU8, Arc, Mutex, OnceLock},
     time::Duration,
 };
 
@@ -36,7 +36,7 @@ fn check_client(client_ver: u32) -> bool {
 
 #[derive(Clone)]
 pub struct Client<T: SocketHandle + Sync + Send + Clone + 'static> {
-    uid: Arc<Mutex<String>>,
+    uid: OnceLock<String>,
     socket: T,
     state: Arc<AtomicU8>,
     heartbeat_recved: mpsc::Sender<()>,
@@ -80,7 +80,7 @@ impl<T: SocketHandle + Sync + Send + Clone + 'static> NetClient for Client<T> {
                 match uid {
                     Ok(uid) if uid != "" => {
                         // TODO: 剔除重复登录用户
-                        *self.uid.lock().unwrap() = uid.clone();
+                        let _ = self.uid.set(uid.clone());
                         mgr.bind_connection(uid, self.socket.id());
                     }
                     other => {
@@ -129,12 +129,16 @@ impl<T: SocketHandle + Sync + Send + Clone + 'static> NetClient for Client<T> {
                 } else {
                     // TODO: add specific server uuid to the subject(eg. handler.servertype/uuid) 要是这个uuid服务器挂了咋办
                 };
-                let uid = self.uid.lock().unwrap().clone();
+                let uid = self.uid.get();
+                if let None = uid {
+                    error!("uid is none");
+                    return;
+                }
                 let payload = nats_msg::encode(
                     self.socket.id(),
                     proto_id,
                     reqid,
-                    uid,
+                    uid.unwrap(),
                     appinfo().uuid(),
                     data,
                 );
@@ -226,7 +230,7 @@ impl<T: SocketHandle + Sync + Send + Clone + 'static> Client<T> {
             }
         });
         Client {
-            uid: Arc::new(Mutex::new(String::new())),
+            uid: OnceLock::new(),
             socket,
             state: Arc::new(AtomicU8::new(0)),
             heartbeat_recved: tx,

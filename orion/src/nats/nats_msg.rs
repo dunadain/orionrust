@@ -1,6 +1,6 @@
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 
-pub fn encode(id: u32, proto_id: u16, reqid: u8, uid: String, svrid: u32, data: Bytes) -> Bytes {
+pub fn encode(id: u32, proto_id: u16, reqid: u8, uid: &str, svrid: u32, data: Bytes) -> Bytes {
     let mut buf = BytesMut::with_capacity(12 + uid.len() + data.len()); // id(4) + proto_id(2) + reqid(1) + uidlen(1) + uid.len() + svrid(4) + data.len()
     buf.put_u32(id); // 4
     buf.put_u16(proto_id); // 2
@@ -35,7 +35,7 @@ mod tests {
         let svrid = 789;
         let data = Bytes::from("payload");
 
-        let encoded = encode(id, proto_id, reqid, uid.clone(), svrid, data.clone());
+        let encoded = encode(id, proto_id, reqid, &uid, svrid, data.clone());
         let (decoded_id, decoded_proto_id, decoded_reqid, decoded_uid, decoded_svrid, decoded_data) =
             decode(encoded);
 
@@ -56,7 +56,7 @@ mod tests {
         let svrid = 789;
         let data = Bytes::new();
 
-        let encoded = encode(id, proto_id, reqid, uid.clone(), svrid, data.clone());
+        let encoded = encode(id, proto_id, reqid, &uid, svrid, data.clone());
         let (decoded_id, decoded_proto_id, reqid, decoded_uid, decoded_svrid, decoded_data) =
             decode(encoded);
 
@@ -77,7 +77,7 @@ mod tests {
         let svrid = 789;
         let data = Bytes::from("payload");
 
-        let encoded = encode(id, proto_id, reqid, uid.clone(), svrid, data.clone());
+        let encoded = encode(id, proto_id, reqid, &uid, svrid, data.clone());
         let (decoded_id, decoded_proto_id, reqid, decoded_uid, decoded_svrid, decoded_data) =
             decode(encoded);
 
