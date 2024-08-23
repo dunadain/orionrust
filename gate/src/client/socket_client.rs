@@ -69,7 +69,7 @@ impl<T: SocketHandle + Sync + Send + Clone + 'static> NetClient for Client<T> {
 
                 if cfg!(not(debug_assertions)) {
                     if !check_client(client_ver) {
-                        self.report_error(ErrorCode::OutedClient as u16, "outed client")
+                        self.report_error(ErrorCode::OutedClient as u16, "outdated client")
                             .await;
                         self.socket.close().await;
                         return;
