@@ -66,12 +66,16 @@ impl<T: SocketHandle + Sync + Send + Clone + 'static> NetClient for Client<T> {
                 decoded_body.advance(uid_len as usize);
 
                 let client_ver = decoded_body.get_u32();
-                if !check_client(client_ver) {
-                    self.report_error(ErrorCode::OutedClient as u16, "outed client")
-                        .await;
-                    self.socket.close().await;
-                    return;
+
+                if cfg!(not(debug_assertions)) {
+                    if !check_client(client_ver) {
+                        self.report_error(ErrorCode::OutedClient as u16, "outed client")
+                            .await;
+                        self.socket.close().await;
+                        return;
+                    }
                 }
+
                 let uid = String::from_utf8(uid_bytes.to_vec());
                 match uid {
                     Ok(uid) if uid != "" => {
