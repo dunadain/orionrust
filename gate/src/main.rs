@@ -16,6 +16,7 @@ async fn main() {
     // println!("test: {}", rv);
     // let r: i32 = redis.del("test").await.unwrap();
     // println!("del: {}", r);
+    orion::setup_panic_hook();
     env::set_var("server_type", "gate");
     let nats_url = env::var("NATS_URL").unwrap_or_else(|_| "nats://localhost:4222".to_string());
     let nats = orion::nats_client::connect(nats_url).await;
