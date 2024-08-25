@@ -1,3 +1,0 @@
-game-login
-chat-send
-battle-attack

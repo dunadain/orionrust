@@ -13,7 +13,7 @@ pub fn server_config() -> &'static Value {
 pub fn protocols() -> &'static Vec<String> {
     static PROTOCOLS: OnceLock<Vec<String>> = OnceLock::new();
     PROTOCOLS.get_or_init(|| {
-        let s = fs::read_to_string("config/proto.txt").unwrap();
-        s.split("\n").map(|s| s.to_string()).collect()
+        let s = fs::read_to_string("config/proto.json").unwrap();
+        serde_json::from_str(s.as_str()).unwrap()
     })
 }
