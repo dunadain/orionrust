@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package game;
+
+message LoginReq {
+    string username = 1;
+    string password = 2;
+}
+
+message LoginRsp {
+    string token = 1;
+    string error = 2;
+}
