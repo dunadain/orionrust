@@ -61,11 +61,11 @@ impl Application {
         let mut sigterm = signal(SignalKind::terminate()).unwrap();
         select! {
             _ = signal::ctrl_c() => {
-                println!("Received SIGINT");
+                info!("Received SIGINT");
                 self.shutdown().await;
             }
             _ = sigterm.recv() => {
-                println!("Received SIGTERM");
+                info!("Received SIGTERM");
                 self.shutdown().await;
             }
         }
